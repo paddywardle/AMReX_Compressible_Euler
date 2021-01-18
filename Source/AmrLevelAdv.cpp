@@ -373,7 +373,7 @@ AmrLevelAdv::advance (Real time,
   }
 
   // Advection velocity - AMReX allows the defintion of a vector
-  // object (similar functionality to C++ array, since its size must
+  // object (similar functionality to C++ std::array<N>, since its size must
   // be known, but was implemented before array was added to C++)
   const Vector<Real> vel{1.0,1.0,0.0};
 
@@ -775,7 +775,7 @@ AmrLevelAdv::errorEst (TagBoxArray& tags,
     const int*  tlo     = tilebx.loVect();
     const int*  thi     = tilebx.hiVect();
 
-    // Various wrappers exist to convert the C++ data structures to Fortran
+    // Various macros exist to convert the C++ data structures to Fortran
     state_error(tptr,  AMREX_ARLIM_3D(tlo), AMREX_ARLIM_3D(thi),
 		BL_TO_FORTRAN_3D(S_new[mfi]),
 		&tagval, &clearval, 
