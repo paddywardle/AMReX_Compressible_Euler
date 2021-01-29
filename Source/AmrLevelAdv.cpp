@@ -452,7 +452,11 @@ AmrLevelAdv::advance (Real time,
 	}
 	scaleFactor *= dx[scaledir];
       }
-      fluxes[d].mult(scaleFactor, 0, 1);
+      // The mult function automatically multiplies entries in a multifab by a scalar
+      // scaleFactor: The scalar to multiply by
+      // 0: The first data index in the multifab to multiply
+      // NUM_STATE:  The total number of data indices that will be multiplied
+      fluxes[d].mult(scaleFactor, 0, NUM_STATE);
     }
     
   }
