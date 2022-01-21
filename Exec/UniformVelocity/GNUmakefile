@@ -1,5 +1,5 @@
 # This should point to the location of the amrex source code.
-AMREX_HOME = ../../../amrex_20_11/amrex
+AMREX_HOME = ../../../amrex
 
 USE_EB =FALSE
 PRECISION  = DOUBLE
