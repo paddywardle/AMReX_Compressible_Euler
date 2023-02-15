@@ -88,6 +88,8 @@ AmrLevelAdv::checkPoint (const std::string& dir,
 //
 //Write a plotfile to specified directory - format is handled automatically by AMReX.
 //
+
+// PW COMMENTS -> lots of changes here to output the data
 void
 AmrLevelAdv::writePlotFile (const std::string& dir,
 	 	            std::ostream&      os,
@@ -133,7 +135,7 @@ AmrLevelAdv::variableSetUp ()
   int hi_bc[amrex::SpaceDim];
   // AMReX has pre-set BCs, including periodic (int_dir) and transmissive (foextrap)
   for (int i = 0; i < amrex::SpaceDim; ++i) {
-    lo_bc[i] = hi_bc[i] = BCType::int_dir;   // periodic boundaries
+    lo_bc[i] = hi_bc[i] = BCType::foextrap;   // PW - Changed this to transmissive boundary conditions
   }
 
   // Object for storing all the boundary conditions
@@ -145,8 +147,12 @@ AmrLevelAdv::variableSetUp ()
   // phi: Name of the variable - appears in output to identify what is being plotted
   // bc: Boundary condition object for this variable (defined above)
   // BndryFunc: Function for setting boundary conditions.  For basic BCs, AMReX can handle these automatically
-  desc_lst.setComponent(Phi_Type, 0, "phi", bc, 
-			StateDescriptor::BndryFunc(nullfill));
+
+  // PW COMMENTS
+  // Add boundary conds for different dimensions here and for differnet variables rho, momentum and energy, pressure maybe?
+  desc_lst.setComponent(Phi_Type, 0, "rho", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to density
+  desc_lst.setComponent(Phi_Type, 1, "mom", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum
+  desc_lst.setComponent(Phi_Type, 2, "E", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to total energy
 }
 
 //
@@ -161,9 +167,20 @@ AmrLevelAdv::variableCleanUp ()
 //
 //Initialize grid data at problem start-up.
 //
+
+// PW COMMENTS -> alter the initial data
 void
 AmrLevelAdv::initData ()
 {
+ 
+  // Add initial data here
+  double gamma = 1.4;
+  double rhoL = 1.0, rhoR = 0.125;
+  double vL = 0.0, vR = 0.0;
+  double pL = 1.0, pR = 0.4;
+  double momL = rhoL*vL, momR = rhoR*vR;
+  double EL = pL / (gamma-1) + 0.5 * rhoL * pow(vL, 2), ER = pR / (gamma - 1) + 0.5 * rhoR * pow(vR, 2);
+  
   //
   // Loop over grids, call FORTRAN function to init with data.
   //
@@ -208,16 +225,30 @@ AmrLevelAdv::initData ()
 	for(int i = lo.x; i <= hi.x; i++)
 	{
 	  const Real x = probLoX + (double(i)+0.5) * dX;
+
+	  if (x < 0.5)
+	    {
+	      arr(i, j, k, 0) = rhoL;
+	      arr(i, j, k, 1) = momL;
+	      arr(i, j, k, 2) = EL;
+	    }
+	  else
+	    {
+	      arr(i, j, k, 0) = rhoR;
+	      arr(i, j, k, 1) = momR;
+	      arr(i, j, k, 2) = ER;
+	    }
+	  /*
 	  if(amrex::SpaceDim == 2)
 	  {
 	    const Real r2 = (x*x + y*y) / 0.01;
-	    arr(i,j,k) = 1. + exp(-r2);
+	    arr(i,j,k) = 
 	  }
 	  else
 	  {
-	    const Real r2 = (x*x + y*y + z*z) / 0.01;
-	    arr(i,j,k) = 1. + exp(-r2);
+	    
 	  }
+	  */
 	}
       }
     }
@@ -274,7 +305,7 @@ AmrLevelAdv::init (AmrLevel &old)
 }
 
 //
-//Initialize data on this level after regridding if old level did not previously exist
+// Initialize data on this level after regridding if old level did not previously exist
 // These are standard AMReX commands which are unlikely to need altering
 //
 void
@@ -306,7 +337,7 @@ AmrLevelAdv::advance (Real time,
 
   MultiFab& S_mm = get_new_data(Phi_Type);
 
-  // Note that some useful commands exist - the maximum and minumum
+  // Note that some useful commands exist - the maximum and minimum
   // values on the current level can be computed directly - here the
   // max and min of variable 0 are being calculated, and output.
   Real maxval = S_mm.max(0);
@@ -314,7 +345,7 @@ AmrLevelAdv::advance (Real time,
   amrex::Print() << "phi max = " << maxval << ", min = " << minval  << std::endl;
 
   // This ensures that all data computed last time step is moved from
-  // `new' data to `old data' - this should not need changing If more
+  // `new' data to `old data' - this should not need changing. If more
   // than one type of data were declared in variableSetUp(), then the
   // loop ensures that all of it is updated appropriately
   for (int k = 0; k < NUM_STATE_TYPE; k++) {
@@ -375,7 +406,7 @@ AmrLevelAdv::advance (Real time,
   // Advection velocity - AMReX allows the defintion of a vector
   // object (similar functionality to C++ std::array<N>, since its size must
   // be known, but was implemented before array was added to C++)
-  const Vector<Real> vel{1.0,1.0,0.0};
+  const Vector<Real> vel{1.0,1.0,0.0}; // PW_COMMENTS -> should be commenting this out and adding something to calculate wave speed on each it?
 
   // State with ghost cells - this is used to compute fluxes and perform the update.
   MultiFab Sborder(grids, dmap, NUM_STATE, NUM_GROW);
@@ -386,6 +417,9 @@ AmrLevelAdv::advance (Real time,
   // domains effectively being overlapping).  It also takes care of
   // AMR patch and CPU boundaries.
   Sborder.FillBoundary(geom.periodicity());
+
+  // PW_COMMENTS
+  // change this loop to implement HLLC solver
 
   for (int d = 0; d < amrex::SpaceDim ; d++)   
   {
@@ -408,13 +442,17 @@ AmrLevelAdv::advance (Real time,
       const auto& arr = Sborder.array(mfi);
       const auto& fluxArr = fluxes[d].array(mfi);
 
+      // flux calculation loop
       for(int k = lo.z; k <= hi.z+kOffset; k++)
       {
 	for(int j = lo.y; j <= hi.y+jOffset; j++)
 	{
 	  for(int i = lo.x; i <= hi.x+iOffset; i++)
 	  {
+
+	    std::array its{i, j, k};
 	    // Conservative flux for the first-order backward difference method
+	    // PW COMMENT -> Change this to HLLC flux calculation
 	    fluxArr(i,j,k) = vel[d] * arr(i-iOffset,j-jOffset,k-kOffset);
 	  }
 	}
@@ -427,6 +465,7 @@ AmrLevelAdv::advance (Real time,
 	  for(int i = lo.x; i <= hi.x; i++)
 	  {
 	    // Conservative update formula
+	    // PW Comments -> just need to alter this to add extra variable in 2D
 	    arr(i,j,k) = arr(i,j,k) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset) - fluxArr(i,j,k));
 	  }
 	}
@@ -484,8 +523,8 @@ AmrLevelAdv::advance (Real time,
   // First: Name of the flux MultiFab (this is done dimension-by-dimension
   // Second: Direction, to ensure the correct vertices are being corrected
   // Third: Source component - the first entry of the flux MultiFab that is to be copied (it is possible that
-  //        some variables will not need refluxing, or will be computed elsewhere (not in this example though)
-  // Fourth: Destinatinon component - the first entry of the flux register that this call to FineAdd sends to
+  //        some variables will not need refluxing, or will be computed elsewhere (not in this example though))
+  // Fourth: Destination component - the first entry of the flux register that this call to FineAdd sends to
   // Fifth: NUM_STATE - number of states being added to the flux register
   // Sixth: Multiplier - in general, the least accurate (coarsest) flux is subtracted (-1) and the most
   //        accurate (finest) flux is added (+1)
@@ -508,6 +547,8 @@ AmrLevelAdv::advance (Real time,
 // This function is called by all of the other time step functions in AMReX, and is the only one that should
 // need modifying
 //
+
+// PW COMMENTS -> modify this with timestep calculation
 Real
 AmrLevelAdv::estTimeStep (Real)
 {
@@ -518,6 +559,9 @@ AmrLevelAdv::estTimeStep (Real)
   const Real* prob_lo = geom.ProbLo();
   const Real cur_time = state[Phi_Type].curTime();
   const MultiFab& S_new = get_new_data(Phi_Type);
+
+  // PW COMMENTS
+  // add here functionality to loop through Euler equation data and find amax and loop through all patches at the current level
 
   // This should not really be hard coded
   const Real velMag = sqrt(2.);
@@ -832,6 +876,8 @@ AmrLevelAdv::read_params ()
   if (! gg->IsCartesian()) {
     amrex::Abort("Please set geom.coord_sys = 0");
   }
+
+  // PW COMMENTS -> want to change this / get rid of it so that I can implement transmissive boundaries
 
   // This tutorial code only supports periodic boundaries.
   // The periodicity is read from the settings file in AMReX source code, but can be accessed here
