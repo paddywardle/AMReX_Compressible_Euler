@@ -2,8 +2,6 @@
 #include "Limiters.h"
 #include <vector>
 
-typedef std::array<double,4> var_array;
-
 class NumericalMethod
 {
 public:
@@ -14,13 +12,13 @@ public:
 
   double reconstruction_uR(double, double, double, Limiters);
 
-  Eigen::ArrayXXf FORCE_flux(Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, double, double);
+  var_arr FORCE_flux(var_arr, var_arr, var_arr, var_arr, double, double);
 
-  Eigen::ArrayXXf HLLC_flux(Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, double, double);
+  var_arr HLLC_flux(var_arr, var_arr, var_arr, var_arr, double, double);
 
-  Eigen::ArrayXXf uL_half_update(Eigen::ArrayXXf, Eigen::ArrayXXf, double, double);
+  var_arr uL_half_update(var_arr, var_arr, double, double);
 
-  Eigen::ArrayXXf uR_half_update(Eigen::ArrayXXf, Eigen::ArrayXXf, double, double);
+  var_arr uR_half_update(var_arr, var_arr, double, double);
 
 private:
 
@@ -46,12 +44,10 @@ private:
 
   double richtmyer_flux(double, double, double, double, double, double);
 
-  Eigen::ArrayXXf wavespeed(Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf);
+  var_arr wavespeed(var_arr, var_arr, var_arr, var_arr);
 
-  Eigen::ArrayXXf uHLLC(Eigen::ArrayXXf, Eigen::ArrayXXf, double, double);
+  var_arr uHLLC(var_arr, var_arr, double, double);
 
-  Eigen::ArrayXXf fHLLC(Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, Eigen::ArrayXXf, double, double, double);
-
-  
-  
+  var_arr fHLLC(var_arr, var_arr, var_arr, var_arr, var_arr, var_arr, double, double, double);
+ 
 };

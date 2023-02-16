@@ -11,8 +11,9 @@ int      AmrLevelAdv::verbose         = 0;
 Real     AmrLevelAdv::cfl             = 0.9; // Default value - can be overwritten in settings file
 int      AmrLevelAdv::do_reflux       = 1;  
 
-int      AmrLevelAdv::NUM_STATE       = 1;  // One variable in the state
-int      AmrLevelAdv::NUM_GROW        = 3;  // number of ghost cells
+// PW COMMENTS: Alter these based on simulation dimensions
+int      AmrLevelAdv::NUM_STATE       = 3;  // One variable in the state
+int      AmrLevelAdv::NUM_GROW        = 2;  // number of ghost cells
 
 //
 //Default constructor.  Builds invalid object.
@@ -335,6 +336,9 @@ AmrLevelAdv::advance (Real time,
                       int  ncycle)
 {
 
+  // PW CHANGES -> Adding Numerical Method class
+  NumericalMethod HLLC;
+  
   MultiFab& S_mm = get_new_data(Phi_Type);
 
   // Note that some useful commands exist - the maximum and minimum
@@ -449,10 +453,12 @@ AmrLevelAdv::advance (Real time,
 	{
 	  for(int i = lo.x; i <= hi.x+iOffset; i++)
 	  {
-
-	    std::array its{i, j, k};
+	    var_array u_i = Array4_to_stdArray(arr, i, j, k, num_var);
+	    var_array u_iMinus1  = Array4_to_stdArray(arr, i-1, j-1, k-1, num_var);
+	    var_array u_iPlus1  = Array4_to_stdArray(arr, i+1, j+1, k+1, num_var);
 	    // Conservative flux for the first-order backward difference method
 	    // PW COMMENT -> Change this to HLLC flux calculation
+	    var_array HLLC_flux = HLLC.HLLC_flux(
 	    fluxArr(i,j,k) = vel[d] * arr(i-iOffset,j-jOffset,k-kOffset);
 	  }
 	}
@@ -466,6 +472,7 @@ AmrLevelAdv::advance (Real time,
 	  {
 	    // Conservative update formula
 	    // PW Comments -> just need to alter this to add extra variable in 2D
+	    
 	    arr(i,j,k) = arr(i,j,k) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset) - fluxArr(i,j,k));
 	  }
 	}
@@ -540,6 +547,19 @@ AmrLevelAdv::advance (Real time,
   }
   
   return dt;
+}
+
+// PW Changes - Adding function to get values in std::array format from amrex::Array4 format
+var_array AmrLevelAdv::Array4_to_stdArray(Array4<Real>& arr, int i, int j, int k, int num_var)
+{
+  var_array vals;
+  
+  for (int v=0; v<num_var; v++)
+    {
+      val[i] = arr(i, j, k, v)
+    }
+
+  return vals;
 }
 
 //

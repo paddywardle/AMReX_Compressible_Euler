@@ -191,18 +191,11 @@ var_arr NumericalMethod::FORCE_flux(var_arr uLhalf,  var_arr uRhalf, var_arr uLh
 
 var_arr NumericalMethod::uHLLC(var_arr u, var_arr u_prim, double S, double S_star)
 {
-  var_arr uHLLC_K(1, 3);
+  var_arr uHLLC_K;
 
   uHLLC_K(0) = u(0) * ((S - u_prim(1))/(S - S_star));
   uHLLC_K(1) = uHLLC_K(0) * S_star;
   uHLLC_K(2) = uHLLC_K(0) * (u(2)/u(0) + (S_star - u_prim(1)) * (S_star + u_prim(2) / (u(0)*(S - u_prim(1)))));
-  /*
-  std::cout<<u<<std::endl;
-  std::cout<<u_prim<<std::endl;
-  std::cout<<S<<" "<<S_star<<std::endl;
-  std::cout<<uHLLC_K<<std::endl;
-  std::cout<<std::endl;
-  */
 
   return uHLLC_K;
 }
@@ -231,8 +224,18 @@ var_arr NumericalMethod::fHLLC(var_arr uL, var_arr uR, var_arr uLHLLC, var_arr u
   return fHLLC;
 }
 
-var_arr NumericalMethod::HLLC_flux(var_arr uL, var_arr uR, var_arr uL_prim, var_arr uR_prim, double dt, double dx)
+var_arr NumericalMethod::HLLC_flux(var_arr u_i, var_arr u_iMinus1, var_arr ui_Plus1, double dx, double dt)
 {
+
+  var_arr uL = reconstruction_uL(u_i, u_iPlus1, u_iMinus1, Limiters::Minbee);
+  var_arr uR = reconstruction_uL(u_i, u_iPlus1, u_iMinus1, Limiters::Minbee);
+
+  var_arr uLhalf = uL_half_update(uL, uR, dt, dx);
+  var_arr uRhalf = uR_half_update(uL, uR, dt, dx);
+  
+
+
+  
   var_arr fhalf(nCells+1, uL.cols());
   var_arr uRflux = eos.Euler_flux_fn(uR, uR_prim);
   var_arr uLflux = eos.Euler_flux_fn(uL, uL_prim);

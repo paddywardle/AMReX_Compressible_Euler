@@ -8,3 +8,4 @@
 #include <libconfig.h++>
 #include <eigen3/Eigen/Dense>
 
+typedef std::array<double,3> var_array;

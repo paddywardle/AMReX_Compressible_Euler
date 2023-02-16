@@ -52,6 +52,9 @@ public:
 			     amrex::VisMF::How  how = amrex::VisMF::NFiles,
 			     bool               dump_old = true) override;
 
+    // PW Changes: Added function
+    var_array Array4_to_stdArray(Array4<Real>& arr, int i, int j, int k, int num_var);
+    
     //
     //Write a plotfile to specified directory.
     //
