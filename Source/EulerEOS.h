@@ -6,9 +6,9 @@ public:
   
   EulerEOS(double);
 
-  Eigen::ArrayXXf prim_to_con(Eigen::ArrayXXf);
+  var_array prim_to_con(var_array);
 
-  Eigen::ArrayXXf con_to_prim(Eigen::ArrayXXf);
+  var_array con_to_prim(var_array);
   
   double flux_fn_rho(double, double);
 
@@ -16,7 +16,7 @@ public:
 
   double flux_fn_E(double, double, double);
 
-  Eigen::ArrayXXf Euler_flux_fn(Eigen::ArrayXXf, Eigen::ArrayXXf);
+  var_array Euler_flux_fn(var_array, var_array);
 
 private:
 
