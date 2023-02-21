@@ -28,10 +28,10 @@ var_array EulerEOS::Euler_flux_fn(var_array f, var_array f_prim)
 {
   
   var_array flux_fn;
-  double rho = f(i, 0);
-  double energy = f(i, 2);
-  double velocity = f_prim(i, 1);
-  double pressure = f_prim(i, 2);
+  double rho = f[0];
+  double energy = f[2];
+  double velocity = f_prim[1];
+  double pressure = f_prim[2];
       
   flux_fn[0] = flux_fn_rho(rho, velocity);
   flux_fn[1] = flux_fn_mom(rho, velocity, pressure);

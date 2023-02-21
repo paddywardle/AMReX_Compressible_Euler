@@ -1,18 +1,18 @@
 #include "NumericalMethod.h"
 
-NumericalMethod::NumericalMethod(double gamma, int nCells)
-  :gamma(gamma), nCells(nCells), eos(gamma){};
+NumericalMethod::NumericalMethod(double gamma)
+  :gamma(gamma), eos(gamma){};
 
-var_arr NumericalMethod::wavespeed(var_arr uL, var_arr uR, var_arr uL_prim, var_arr uR_prim)
+var_array NumericalMethod::wavespeed(var_array uL, var_array uR, var_array uL_prim, var_array uR_prim)
 {
-  var_arr wavespeeds(1, 3);
+  var_array wavespeeds;
 
-  double csL = sqrt((gamma*uL_prim(2))/uL(0));
-  double csR = sqrt((gamma*uR_prim(2))/uR(0));
+  double csL = sqrt((gamma*uL_prim[2])/uL[0]);
+  double csR = sqrt((gamma*uR_prim[2])/uR[0]);
 
-  wavespeeds.col(0) = uL_prim(1) - csL;
-  wavespeeds.col(1) = uR_prim(1) + csR;
-  wavespeeds.col(2) = (uR_prim(2) - uL_prim(2) + uL(0)*uL_prim(1)*(wavespeeds(0) - uL_prim(1)) - uR(0)*uR_prim(1)*(wavespeeds(1) - uR_prim(1))) / (uL(0)*(wavespeeds(0) - uL_prim(1)) - uR(0)*(wavespeeds(1) - uR_prim(1)));
+  wavespeeds[0] = uL_prim[1] - csL;
+  wavespeeds[1] = uR_prim[1] + csR;
+  wavespeeds[2] = (uR_prim[2] - uL_prim[2] + uL[0]*uL_prim[1]*(wavespeeds[0] - uL_prim[1]) - uR[0]*uR_prim[1]*(wavespeeds[1] - uR_prim[1])) / (uL[0]*(wavespeeds[0] - uL_prim[1]) - uR[0]*(wavespeeds[1] - uR_prim[1]));
 
   return wavespeeds;
 }
@@ -136,145 +136,119 @@ double NumericalMethod::van_albada(double r)
     }
 }
 
-double NumericalMethod::lax_friedrich_flux(double u_i, double u_iPlus1, double flux_i, double flux_Plus1,  double dt, double dx)
+var_array NumericalMethod::uHLLC(var_array u, var_array u_prim, double S, double S_star)
 {
-  
-  double fhalf;
+  var_array uHLLC_K;
 
-  fhalf = 0.5 * (dx / dt) * (u_i - u_iPlus1) + 0.5 * (flux_Plus1 + flux_i);
-  
-  return fhalf;
-}
-
-double NumericalMethod::richtmyer_flux(double u_i, double u_iPlus1, double flux_i, double flux_Plus1,  double dt, double dx)
-{
-
-  double uhalf;
-  double fhalf;
-
-  uhalf = 0.5 * (u_i + u_iPlus1) - 0.5 * (dt / dx) * (flux_Plus1 - flux_i);
-  
-  return uhalf;
-}
-
-var_arr NumericalMethod::FORCE_flux(var_arr uLhalf,  var_arr uRhalf, var_arr uLhalf_prim, var_arr uRhalf_prim, double dt, double dx)
-{
-  
-  var_arr fhalf(nCells+1, uLhalf.cols());
-  var_arr uRflux = eos.Euler_flux_fn(uRhalf, uRhalf_prim);
-  var_arr uLflux = eos.Euler_flux_fn(uLhalf, uLhalf_prim);
-  var_arr uhalf(nCells+1, uLhalf.cols());
-  var_arr RI_flux(nCells+1, uLhalf.cols());
-  var_arr LF_flux(nCells+1, uLhalf.cols());
-
-  for (int i=0; i<nCells+1; i++)
-    {
-      for (int j=0; j<uLhalf.cols(); j++)
-	{
-	  uhalf(i, j) = richtmyer_flux(uRhalf(i, j), uLhalf(i+1, j), uRflux(i, j), uLflux(i+1, j), dt, dx);
-	  LF_flux(i, j) = lax_friedrich_flux(uRhalf(i, j), uLhalf(i+1, j), uRflux(i, j), uLflux(i+1, j), dt, dx);
-	}
-    }
-
-  RI_flux = eos.Euler_flux_fn(uhalf, eos.con_to_prim(uhalf));
-
-  for (int i=0; i<nCells+1; i++)
-    {
-      for (int j=0; j<uLhalf.cols(); j++)
-	{
-	  fhalf(i, j) = 0.5 * (LF_flux(i, j) + RI_flux(i, j));
-	}
-    }
-
-  return fhalf;
-}
-
-var_arr NumericalMethod::uHLLC(var_arr u, var_arr u_prim, double S, double S_star)
-{
-  var_arr uHLLC_K;
-
-  uHLLC_K(0) = u(0) * ((S - u_prim(1))/(S - S_star));
-  uHLLC_K(1) = uHLLC_K(0) * S_star;
-  uHLLC_K(2) = uHLLC_K(0) * (u(2)/u(0) + (S_star - u_prim(1)) * (S_star + u_prim(2) / (u(0)*(S - u_prim(1)))));
+  uHLLC_K[0] = u[0] * ((S - u_prim[1])/(S - S_star));
+  uHLLC_K[1] = uHLLC_K[0] * S_star;
+  uHLLC_K[2] = uHLLC_K[0] * (u[2]/u[0] + (S_star - u_prim[1]) * (S_star + u_prim[2] / (u[0]*(S - u_prim[1]))));
 
   return uHLLC_K;
 }
 
-var_arr NumericalMethod::fHLLC(var_arr uL, var_arr uR, var_arr uLHLLC, var_arr uRHLLC, var_arr fL, var_arr fR, double SL, double SR, double S_star)
+var_array NumericalMethod::fHLLC(var_array uL, var_array uR, var_array uLHLLC, var_array uRHLLC, var_array fL, var_array fR, double SL, double SR, double S_star)
 {
-  var_arr fHLLC(uLHLLC.rows(), uLHLLC.cols());
+  var_array fHLLC;
+
+  for (int i=0; i<fHLLC.size(); i++)
+    {
   
-  if (SL >= 0)
-    {
-      fHLLC = fL;
-    }
-  else if (SL < 0 && S_star >= 0)
-    {
-      fHLLC = fL + SL*(uLHLLC - uL);
-    }
-  else if (S_star < 0 && SR >= 0)
-    {
-      fHLLC = fR + SR*(uRHLLC - uR);
-    }
-  else
-    {
-      fHLLC = fR;
+      if (SL >= 0)
+	{
+	  fHLLC[i] = fL[i];
+	}
+      else if (SL < 0 && S_star >= 0)
+	{
+	  fHLLC[i] = fL[i] + SL*(uLHLLC[i] - uL[i]);
+	}
+      else if (S_star < 0 && SR >= 0)
+	{
+	  fHLLC[i] = fR[i] + SR*(uRHLLC[i] - uR[i]);
+	}
+      else
+	{
+	  fHLLC[i] = fR[i];
+	}
     }
 
   return fHLLC;
 }
 
-var_arr NumericalMethod::HLLC_flux(var_arr u_i, var_arr u_iMinus1, var_arr ui_Plus1, double dx, double dt)
+var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_array u_iPlus1, var_array u_iPlus2, double dx, double dt)
 {
 
-  var_arr uL = reconstruction_uL(u_i, u_iPlus1, u_iMinus1, Limiters::Minbee);
-  var_arr uR = reconstruction_uL(u_i, u_iPlus1, u_iMinus1, Limiters::Minbee);
+  var_array uL, uR, uLPlus1, uRPlus1;
 
-  var_arr uLhalf = uL_half_update(uL, uR, dt, dx);
-  var_arr uRhalf = uR_half_update(uL, uR, dt, dx);
-  
-
-
-  
-  var_arr fhalf(nCells+1, uL.cols());
-  var_arr uRflux = eos.Euler_flux_fn(uR, uR_prim);
-  var_arr uLflux = eos.Euler_flux_fn(uL, uL_prim);
-
-  var_arr uLHLLC(nCells+1, uL.cols());
-  var_arr uRHLLC(nCells+1, uR.cols());
-
-  for (int i=0; i<nCells+1; i++)
+  for (int i=0; i<uL.size(); i++)
     {
-      var_arr wavespeeds = wavespeed(uR.row(i), uL.row(i+1), uR_prim.row(i), uL_prim.row(i+1));
-      double SL=wavespeeds(0), SR=wavespeeds(1), S_star=wavespeeds(2);
-
-      uLHLLC.row(i) = uHLLC(uR.row(i), uR_prim.row(i), SL, S_star);
-      uRHLLC.row(i) = uHLLC(uL.row(i+1), uL_prim.row(i+1), SR, S_star);
-
-      fhalf.row(i) = fHLLC(uR.row(i), uL.row(i+1), uLHLLC.row(i), uRHLLC.row(i), uRflux.row(i), uLflux.row(i+1), SL, SR, S_star);
+      uL[i] = reconstruction_uL(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
+      uR[i] = reconstruction_uR(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
+      uLPlus1[i] = reconstruction_uL(u_iPlus1[i], u_iPlus2[i], u_i[i], Limiters::Minbee);
+      uRPlus1[i] = reconstruction_uR(u_iPlus1[i], u_iPlus2[i], u_i[i], Limiters::Minbee);	
     }
+
+  // LOOK at what all of these look like!
+
+  var_array uLhalf = uL_half_update(uL, uR, dt, dx);
+  var_array uRhalf = uR_half_update(uL, uR, dt, dx);
+
+  var_array uLhalfPlus1 = uL_half_update(uLPlus1, uRPlus1, dt, dx);
+  var_array uRhalfPlus1 = uR_half_update(uLPlus1, uRPlus1, dt, dx);
+  
+  var_array uLhalf_prim = eos.con_to_prim(uLhalf);
+  var_array uRhalf_prim = eos.con_to_prim(uRhalf);
+
+  var_array uLhalfPlus1_prim = eos.con_to_prim(uLhalfPlus1);
+  var_array uRhalfPlus1_prim = eos.con_to_prim(uRhalfPlus1);
+  
+  var_array uRflux = eos.Euler_flux_fn(uRhalf, uRhalf_prim);
+  var_array uLflux = eos.Euler_flux_fn(uLhalf, uLhalf_prim);
+
+  var_array uRPlus1flux = eos.Euler_flux_fn(uRhalfPlus1, uRhalfPlus1_prim);
+  var_array uLPlus1flux = eos.Euler_flux_fn(uLhalfPlus1, uLhalfPlus1_prim);
+
+  var_array wavespeeds = wavespeed(uRhalf, uLhalfPlus1, uRhalf_prim, uLhalfPlus1_prim); // watch out <- am I doing the correct variables here - check what is being fed from AMReX
+
+  double SL=wavespeeds[0], SR=wavespeeds[1], S_star=wavespeeds[2];
+  
+  var_array uLHLLC = uHLLC(uRhalf, uRhalf_prim, SL, S_star);
+  var_array uRHLLC = uHLLC(uLhalfPlus1, uLhalfPlus1_prim, SR, S_star);
+
+  var_array fhalf = fHLLC(uRhalf, uLhalfPlus1, uLHLLC, uRHLLC, uRflux, uLPlus1flux, SL, SR, S_star);
 
   return fhalf;
 }
 
-var_arr NumericalMethod::uL_half_update(var_arr uL, var_arr uR, double dt, double dx)
+var_array NumericalMethod::uL_half_update(var_array uL, var_array uR, double dt, double dx)
 {
-  
   // data
-  var_arr uL_flux = eos.Euler_flux_fn(uL, eos.con_to_prim(uL));
-  var_arr uR_flux = eos.Euler_flux_fn(uR, eos.con_to_prim(uR));
+  var_array uL_flux = eos.Euler_flux_fn(uL, eos.con_to_prim(uL));
+  var_array uR_flux = eos.Euler_flux_fn(uR, eos.con_to_prim(uR));
+  var_array uLhalf;
 
-  return uL - 0.5 * (dt / dx) * (uR_flux - uL_flux);
+  for (int i=0; i<uLhalf.size(); i++)
+    {
+      uLhalf[i] = uL[i] - 0.5 * (dt / dx) * (uR_flux[i] - uL_flux[i]);
+    }
+
+  return uLhalf;
   
 }
 
-var_arr NumericalMethod::uR_half_update(var_arr uL, var_arr uR, double dt, double dx)
+var_array NumericalMethod::uR_half_update(var_array uL, var_array uR, double dt, double dx)
 {
   
   // data
-  var_arr uL_flux = eos.Euler_flux_fn(uL, eos.con_to_prim(uL));
-  var_arr uR_flux = eos.Euler_flux_fn(uR, eos.con_to_prim(uR));
+  var_array uL_flux = eos.Euler_flux_fn(uL, eos.con_to_prim(uL));
+  var_array uR_flux = eos.Euler_flux_fn(uR, eos.con_to_prim(uR));
+  var_array uRhalf;
 
-  return uR - 0.5 * (dt / dx) * (uR_flux - uL_flux);
+  for (int i=0; i<uRhalf.size(); i++)
+    {
+      uRhalf[i] = uR[i] - 0.5 * (dt / dx) * (uR_flux[i] - uL_flux[i]);
+    }
+
+  return uRhalf;
   
 }

@@ -6,19 +6,17 @@ class NumericalMethod
 {
 public:
 
-  NumericalMethod(double, int);
+  NumericalMethod(double);
 
   double reconstruction_uL(double, double, double, Limiters);
 
   double reconstruction_uR(double, double, double, Limiters);
 
-  var_arr FORCE_flux(var_arr, var_arr, var_arr, var_arr, double, double);
+  var_array HLLC_flux(var_array, var_array, var_array, var_array, double, double);
 
-  var_arr HLLC_flux(var_arr, var_arr, var_arr, var_arr, double, double);
+  var_array uL_half_update(var_array, var_array, double, double);
 
-  var_arr uL_half_update(var_arr, var_arr, double, double);
-
-  var_arr uR_half_update(var_arr, var_arr, double, double);
+  var_array uR_half_update(var_array, var_array, double, double);
 
 private:
 
@@ -40,14 +38,10 @@ private:
 
   double limiterXi(double, Limiters);
 
-  double lax_friedrich_flux(double, double, double, double, double, double);
+  var_array wavespeed(var_array, var_array, var_array, var_array);
 
-  double richtmyer_flux(double, double, double, double, double, double);
+  var_array uHLLC(var_array, var_array, double, double);
 
-  var_arr wavespeed(var_arr, var_arr, var_arr, var_arr);
-
-  var_arr uHLLC(var_arr, var_arr, double, double);
-
-  var_arr fHLLC(var_arr, var_arr, var_arr, var_arr, var_arr, var_arr, double, double, double);
+  var_array fHLLC(var_array, var_array, var_array, var_array, var_array, var_array, double, double, double);
  
 };

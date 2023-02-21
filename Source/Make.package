@@ -1,5 +1,5 @@
-CEXE_sources += AmrLevelAdv.cpp LevelBldAdv.cpp main.cpp NumericalMethod.cpp EulerEOS.cpp
+CEXE_sources += AmrLevelAdv.cpp LevelBldAdv.cpp main.cpp NumericalMethod.cpp EulerEOS.cpp InitialCondTests.cpp
 
-CEXE_headers += AmrLevelAdv.H NumericalMethod.h EulerEOS.h
+CEXE_headers += AmrLevelAdv.H NumericalMethod.h EulerEOS.h InitialCondTests.h common.h
 
 FEXE_headers += Adv_F.H

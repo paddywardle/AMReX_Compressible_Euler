@@ -1,4 +1,3 @@
-
 #include <new>
 #include <iostream>
 #include <iomanip>
@@ -27,13 +26,14 @@ main (int   argc,
     {
         ParmParse pp;
 
-        max_step  = -1;
+        max_step  = 10;
         strt_time =  0.0;
-        stop_time = -1.0;
+        stop_time = 1.0;
 
         pp.query("max_step",max_step);
         pp.query("strt_time",strt_time);
         pp.query("stop_time",stop_time);
+	std::cout<<max_step<<" "<<strt_time<<" "<<stop_time<<std::endl;
     }
 
     if (strt_time < 0.0) {
@@ -48,36 +48,36 @@ main (int   argc,
         Amr amr(getLevelBld());
 
 	amr.init(strt_time,stop_time);
+	std::cout<<"Hello"<<std::endl;
 
 	while ( amr.okToContinue() &&
   	       (amr.levelSteps(0) < max_step || max_step < 0) &&
 	       (amr.cumTime() < stop_time || stop_time < 0.0) )
-
 	{
 	    //
 	    // Do a coarse timestep.  Recursively calls timeStep()
 	    //
 	    amr.coarseTimeStep(stop_time);
 	}
-
+	std::cout<<"Hello2"<<std::endl;
 	// Write final checkpoint and plotfile
 	if (amr.stepOfLastCheckPoint() < amr.levelSteps(0)) {
 	    amr.checkPoint();
 	}
-
+	std::cout<<"Hello3"<<std::endl;
 	if (amr.stepOfLastPlotFile() < amr.levelSteps(0)) {
 	    amr.writePlotFile();
 	}
-
+	std::cout<<"Hello4"<<std::endl;
     }
 
     Real dRunTime2 = amrex::second() - dRunTime1;
-
+    std::cout<<"Hello5"<<std::endl;
     ParallelDescriptor::ReduceRealMax(dRunTime2, ParallelDescriptor::IOProcessorNumber());
-
+    std::cout<<"Hello6"<<std::endl;
     amrex::Print() << "Run time = " << dRunTime2 << std::endl;
 
     amrex::Finalize();
-
+    
     return 0;
 }

@@ -3,9 +3,13 @@
 
 #include <AMReX_AmrLevel.H>
 #include <AMReX_FluxRegister.H>
+#include <AMReX_Array4.H>
 
 #include <memory>
 #include <iostream>
+
+#include "NumericalMethod.h"
+#include "InitialCondTests.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -53,7 +57,7 @@ public:
 			     bool               dump_old = true) override;
 
     // PW Changes: Added function
-    var_array Array4_to_stdArray(Array4<Real>& arr, int i, int j, int k, int num_var);
+  var_array Array4_to_stdArray(amrex::Array4<amrex::Real> const& arr, int i, int j, int k, int num_var);
     
     //
     //Write a plotfile to specified directory.

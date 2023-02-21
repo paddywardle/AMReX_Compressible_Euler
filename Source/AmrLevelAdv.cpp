@@ -1,9 +1,10 @@
-
 #include <AmrLevelAdv.H>
 #include <Adv_F.H>
 #include <AMReX_VisMF.H>
 #include <AMReX_TagBox.H>
 #include <AMReX_ParmParse.H>
+#include <AMReX_Array4.H>
+#include <iostream>
 
 using namespace amrex;
 
@@ -12,8 +13,13 @@ Real     AmrLevelAdv::cfl             = 0.9; // Default value - can be overwritt
 int      AmrLevelAdv::do_reflux       = 1;  
 
 // PW COMMENTS: Alter these based on simulation dimensions
-int      AmrLevelAdv::NUM_STATE       = 3;  // One variable in the state
+int      AmrLevelAdv::NUM_STATE       = 3;  // Three variable in the state
 int      AmrLevelAdv::NUM_GROW        = 2;  // number of ghost cells
+
+double gam=1.4; // PW Changes - gam value for simulation
+InitialCondTests Test; // PW Changes - Object containing initial conditions
+EulerEOS euler_EOS(gam); // PW Changes - Object for EulerEOS methods
+NumericalMethod HLLC(gam); // PW Changes - Adding Numerical Method class
 
 //
 //Default constructor.  Builds invalid object.
@@ -173,14 +179,6 @@ AmrLevelAdv::variableCleanUp ()
 void
 AmrLevelAdv::initData ()
 {
- 
-  // Add initial data here
-  double gamma = 1.4;
-  double rhoL = 1.0, rhoR = 0.125;
-  double vL = 0.0, vR = 0.0;
-  double pL = 1.0, pR = 0.4;
-  double momL = rhoL*vL, momR = rhoR*vR;
-  double EL = pL / (gamma-1) + 0.5 * rhoL * pow(vL, 2), ER = pR / (gamma - 1) + 0.5 * rhoR * pow(vR, 2);
   
   //
   // Loop over grids, call FORTRAN function to init with data.
@@ -227,27 +225,18 @@ AmrLevelAdv::initData ()
 	{
 	  const Real x = probLoX + (double(i)+0.5) * dX;
 
-	  if (x < 0.5)
-	    {
-	      arr(i, j, k, 0) = rhoL;
-	      arr(i, j, k, 1) = momL;
-	      arr(i, j, k, 2) = EL;
-	    }
-	  else
-	    {
-	      arr(i, j, k, 0) = rhoR;
-	      arr(i, j, k, 1) = momR;
-	      arr(i, j, k, 2) = ER;
-	    }
+	  var_array prim_vals = Test.Test1D_1(x);
+	  var_array con_vals = euler_EOS.prim_to_con(prim_vals);
+
+	  arr(i, j, k, 0) = con_vals[0];
+	  arr(i, j, k, 1) = con_vals[1];
+	  arr(i, j, k, 2) = con_vals[2];
+	  
 	  /*
 	  if(amrex::SpaceDim == 2)
 	  {
 	    const Real r2 = (x*x + y*y) / 0.01;
 	    arr(i,j,k) = 
-	  }
-	  else
-	  {
-	    
 	  }
 	  */
 	}
@@ -335,9 +324,7 @@ AmrLevelAdv::advance (Real time,
                       int  iteration,
                       int  ncycle)
 {
-
-  // PW CHANGES -> Adding Numerical Method class
-  NumericalMethod HLLC;
+  std::cout<<"IN ADVANCE"<<std::endl;
   
   MultiFab& S_mm = get_new_data(Phi_Type);
 
@@ -410,7 +397,7 @@ AmrLevelAdv::advance (Real time,
   // Advection velocity - AMReX allows the defintion of a vector
   // object (similar functionality to C++ std::array<N>, since its size must
   // be known, but was implemented before array was added to C++)
-  const Vector<Real> vel{1.0,1.0,0.0}; // PW_COMMENTS -> should be commenting this out and adding something to calculate wave speed on each it?
+  // const Vector<Real> vel{1.0,1.0,0.0}; // PW_COMMENTS -> should be commenting this out and adding something to calculate wave speed on each it?
 
   // State with ghost cells - this is used to compute fluxes and perform the update.
   MultiFab Sborder(grids, dmap, NUM_STATE, NUM_GROW);
@@ -453,13 +440,21 @@ AmrLevelAdv::advance (Real time,
 	{
 	  for(int i = lo.x; i <= hi.x+iOffset; i++)
 	  {
-	    var_array u_i = Array4_to_stdArray(arr, i, j, k, num_var);
-	    var_array u_iMinus1  = Array4_to_stdArray(arr, i-1, j-1, k-1, num_var);
-	    var_array u_iPlus1  = Array4_to_stdArray(arr, i+1, j+1, k+1, num_var);
-	    // Conservative flux for the first-order backward difference method
-	    // PW COMMENT -> Change this to HLLC flux calculation
-	    var_array HLLC_flux = HLLC.HLLC_flux(
-	    fluxArr(i,j,k) = vel[d] * arr(i-iOffset,j-jOffset,k-kOffset);
+	    std::cout<<"ADVANCE LOOP"<<std::endl;
+	    // PW Changes - getting values for HLLC
+	    var_array u_i = Array4_to_stdArray(arr, i, j, k, NUM_STATE);
+	    var_array u_iMinus1  = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE);
+	    var_array u_iPlus1  = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE);
+	    var_array u_iPlus2  = Array4_to_stdArray(arr, i+2, j, k, NUM_STATE);
+
+	    // PW Changes - HLLC flux calculation
+	    var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt);
+
+	    // PW Changes - Adding flux calculation into flux array
+	    for (int z=0; z<HLLC_flux.size(); z++)
+	      {
+		fluxArr(i,j,k,z) = HLLC_flux[z];
+	      }
 	  }
 	}
       }
@@ -470,10 +465,13 @@ AmrLevelAdv::advance (Real time,
 	{
 	  for(int i = lo.x; i <= hi.x; i++)
 	  {
-	    // Conservative update formula
-	    // PW Comments -> just need to alter this to add extra variable in 2D
-	    
-	    arr(i,j,k) = arr(i,j,k) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset) - fluxArr(i,j,k));
+	    // PW Changes - Adding loop to go through variables in arr
+	    for (int z=0; z<NUM_STATE; z++)
+	      {
+		// Conservative update formula
+		// PW Comments -> just need to alter this to add extra variable in 2D
+		arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
+	      }
 	  }
 	}
       }
@@ -550,14 +548,16 @@ AmrLevelAdv::advance (Real time,
 }
 
 // PW Changes - Adding function to get values in std::array format from amrex::Array4 format
-var_array AmrLevelAdv::Array4_to_stdArray(Array4<Real>& arr, int i, int j, int k, int num_var)
+var_array AmrLevelAdv::Array4_to_stdArray(amrex::Array4<amrex::Real> const& arr, int i, int j, int k, int num_var)
 {
   var_array vals;
   
   for (int v=0; v<num_var; v++)
     {
-      val[i] = arr(i, j, k, v)
+      vals[i] = arr(i, j, k, v);
+      std::cout<<vals[i]<<" ";
     }
+  std::cout<<std::endl;
 
   return vals;
 }
@@ -583,8 +583,48 @@ AmrLevelAdv::estTimeStep (Real)
   // PW COMMENTS
   // add here functionality to loop through Euler equation data and find amax and loop through all patches at the current level
 
-  // This should not really be hard coded
-  const Real velMag = sqrt(2.);
+  double velMag = 0.0; // PW Changes - changed to double
+
+  // PW Changes - Looping over all patches to overall timestep
+  for (MFIter mfi(S_new, true); mfi.isValid(); ++mfi)
+  {
+    const Box& bx = mfi.tilebox();
+
+    const Dim3 lo = lbound(bx);
+    const Dim3 hi = ubound(bx);
+
+    // Indexable arrays for the data, and the directional flux
+    // Based on the vertex-centred definition of the flux array, the
+    // data array runs from e.g. [0,N] and the flux array from [0,N+1]
+    const auto& arr = S_new.array(mfi);
+    //const auto& fluxArr = fluxes[d].array(mfi);
+
+    // flux calculation loop
+    for(int k = lo.z; k <= hi.z; k++)
+    {
+      for(int j = lo.y; j <= hi.y; j++)
+      {
+	for(int i = lo.x; i <= hi.x; i++)
+	{
+	  var_array u_con;
+	  for (int z=0; z<NUM_STATE; z++)
+	    {
+	      u_con[z] = arr(i,j,k,z);
+	    }
+	  var_array u_prim = euler_EOS.prim_to_con(u_con);
+
+	  double cs = sqrt((gam*u_prim[2])/u_prim[0]);
+	  double wavespeed = fabs(u_prim[1]) + cs;
+
+	  if (wavespeed > velMag)
+	    {
+	      velMag = wavespeed;
+	    }
+	}
+      }
+    }
+  }
+  
   for(unsigned int d = 0; d < amrex::SpaceDim; ++d)
   {
     dt_est = std::min(dt_est, dx[d]/velMag);
