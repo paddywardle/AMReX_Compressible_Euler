@@ -13,7 +13,7 @@ DEBUG      = TRUE
 #DEBUG      = FALSE
 
 # Dimensionality is specified at compile time - this example has been written for 2D only
-DIM        = 2
+DIM        = 1
 
 # Compiler can be specified here
 COMP	   = gnu

@@ -1,4 +1,5 @@
 Exec/*
+Exec/UniformVelocity/*
 
 # back-up files
 *.cpp~

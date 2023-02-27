@@ -1,5 +1,6 @@
 # ------------------  INPUTS TO MAIN PROGRAM  -------------------
-stop_time = 7.0
+stop_time = 0.15
+max_step = 1
 
 # PROBLEM SIZE & GEOMETRY
 # NOTE - although this example is 2D, 3D data can be specified safely; the z-components are ignored
@@ -17,7 +18,7 @@ adv.v              = 1       # verbosity in Adv
 amr.v              = 1       # verbosity in Amr (recommended, else progres of code is not output)
 
 # REFINEMENT / REGRIDDING
-amr.max_level       = 2       # maximum level number allowed
+amr.max_level       = 2      # maximum level number allowed
 amr.ref_ratio       = 2 2 2 2 # refinement ratio
 amr.regrid_int      = 1       # how often to regrid (number of coarse timesteps between regrid)
 amr.blocking_factor = 8       # block factor in grid generation
