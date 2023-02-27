@@ -4,6 +4,7 @@
 #include <AMReX_TagBox.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_Array4.H>
+#include <AMReX_BLBackTrace.H>
 #include <iostream>
 
 using namespace amrex;
@@ -179,7 +180,6 @@ AmrLevelAdv::variableCleanUp ()
 void
 AmrLevelAdv::initData ()
 {
-  
   //
   // Loop over grids, call FORTRAN function to init with data.
   //
@@ -231,7 +231,6 @@ AmrLevelAdv::initData ()
 	  arr(i, j, k, 0) = con_vals[0];
 	  arr(i, j, k, 1) = con_vals[1];
 	  arr(i, j, k, 2) = con_vals[2];
-	  
 	  /*
 	  if(amrex::SpaceDim == 2)
 	  {
@@ -324,8 +323,8 @@ AmrLevelAdv::advance (Real time,
                       int  iteration,
                       int  ncycle)
 {
-  std::cout<<"IN ADVANCE"<<std::endl;
   
+  std::ostringstream ss;
   MultiFab& S_mm = get_new_data(Phi_Type);
 
   // Note that some useful commands exist - the maximum and minimum
@@ -440,24 +439,44 @@ AmrLevelAdv::advance (Real time,
 	{
 	  for(int i = lo.x; i <= hi.x+iOffset; i++)
 	  {
-	    std::cout<<"ADVANCE LOOP"<<std::endl;
+	    //std::cout<<"ADVANCE LOOP "<<NUM_STATE<<std::endl;
 	    // PW Changes - getting values for HLLC
-	    var_array u_i = Array4_to_stdArray(arr, i, j, k, NUM_STATE);
-	    var_array u_iMinus1  = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE);
-	    var_array u_iPlus1  = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE);
-	    var_array u_iPlus2  = Array4_to_stdArray(arr, i+2, j, k, NUM_STATE);
-
+	    //ss<<"arr.box() = "<<arr.box();
+	    std::cout<<"Indices: "<<i<<" "<<j<<" "<<k<<std::endl;
+	    std::cout<<"Indices used: "<<i<<" "<<i+1<<" "<<i+2<<" "<<i+3<<std::endl;
+	    std::cout<<"It counters: "<<hi.x+iOffset<<" "<<hi.y+jOffset<<" "<<hi.z+kOffset<<std::endl;
+	    
+	    var_array u_i = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE);
+	    var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, NUM_STATE);
+	    var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, NUM_STATE);
+	    var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE);
+	    
 	    // PW Changes - HLLC flux calculation
 	    var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt);
 
+	    //std::cout<<"HLLC_flux "<<HLLC_flux[0]<<" "<<HLLC_flux[1]<<" "<<HLLC_flux[2]<<std::endl;
 	    // PW Changes - Adding flux calculation into flux array
+	    //BL_BACKTRACE_PUSH(ss.str());
 	    for (int z=0; z<HLLC_flux.size(); z++)
 	      {
 		fluxArr(i,j,k,z) = HLLC_flux[z];
 	      }
+	    //BL_BACKTRACE_POP();
+	    /*
+	    std::cout<<"HLLC_flux ";
+	    for (int z=0; z<HLLC_flux.size(); z++)
+	      {
+		std::cout<<fluxArr(i,j,k,z)<<" ";
+	      }
+	    std::cout<<std::endl;
+	    std::cout<<"Size: "<<arr.size()<<std::endl;
+	    */
 	  }
+	  std::cout<<"Full x"<<std::endl;
 	}
+	std::cout<<"Full y"<<std::endl;
       }
+      std::cout<<"Full z"<<std::endl;
 
       for(int k = lo.z; k <= hi.z; k++)
       {
@@ -554,10 +573,8 @@ var_array AmrLevelAdv::Array4_to_stdArray(amrex::Array4<amrex::Real> const& arr,
   
   for (int v=0; v<num_var; v++)
     {
-      vals[i] = arr(i, j, k, v);
-      std::cout<<vals[i]<<" ";
-    }
-  std::cout<<std::endl;
+      vals[v] = arr(i, j, k, v);
+    }  
 
   return vals;
 }
