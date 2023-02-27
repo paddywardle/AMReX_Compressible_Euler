@@ -180,6 +180,8 @@ var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_arr
 
   var_array uL, uR, uLPlus1, uRPlus1;
 
+  //std::cout<<"dx: "<<dx<<", dt: "<<dt<<std::endl;
+
   for (int i=0; i<uL.size(); i++)
     {
       uL[i] = reconstruction_uL(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
@@ -216,6 +218,14 @@ var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_arr
   var_array uRHLLC = uHLLC(uLhalfPlus1, uLhalfPlus1_prim, SR, S_star);
 
   var_array fhalf = fHLLC(uRhalf, uLhalfPlus1, uLHLLC, uRHLLC, uRflux, uLPlus1flux, SL, SR, S_star);
+  /*								  
+  std::cout<<"break"<<std::endl;
+  for (int i=0; i<uL.size(); i++)
+    {
+      std::cout<<fhalf[i]<<std::endl;
+    }
+  std::cout<<std::endl;
+  */
 
   return fhalf;
 }
