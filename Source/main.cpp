@@ -43,12 +43,10 @@ main (int   argc,
     if (max_step < 0 && stop_time < 0.0) {
 	amrex::Abort("Exiting because neither max_step nor stop_time is non-negative.");
     }
-
     {
         Amr amr(getLevelBld());
 
 	amr.init(strt_time,stop_time);
-	std::cout<<"Hello"<<std::endl;
 
 	while ( amr.okToContinue() &&
   	       (amr.levelSteps(0) < max_step || max_step < 0) &&
@@ -57,6 +55,7 @@ main (int   argc,
 	    //
 	    // Do a coarse timestep.  Recursively calls timeStep()
 	    //
+	  std::cout<<"Hello2"<<std::endl;
 	    amr.coarseTimeStep(stop_time);
 	}
 	std::cout<<"Hello2"<<std::endl;
