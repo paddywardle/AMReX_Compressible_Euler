@@ -1,6 +1,6 @@
 #include <array>
 
-typedef std::array<double,3> var_1D;
+typedef std::array<double,4> var_1D;
 typedef std::array<double,4> var_2D;
 
 
