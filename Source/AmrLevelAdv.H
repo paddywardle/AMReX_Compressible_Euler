@@ -4,6 +4,7 @@
 #include <AMReX_AmrLevel.H>
 #include <AMReX_FluxRegister.H>
 #include <AMReX_Array4.H>
+#include <AMReX_BCUtil.H>
 
 #include <memory>
 #include <iostream>
@@ -57,7 +58,10 @@ public:
 			     bool               dump_old = true) override;
 
     // PW Changes: Added function
-  var_array Array4_to_stdArray(amrex::Array4<amrex::Real> const& arr, int i, int j, int k, int num_var);
+    var_array Array4_to_stdArray(amrex::Array4<amrex::Real> const& arr, int i, int j, int k, int num_var);
+
+    // PW Chnages: Added function
+  void TransmissiveBoundaryConds(amrex::MultiFab& phi);
     
     //
     //Write a plotfile to specified directory.
