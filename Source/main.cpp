@@ -26,7 +26,7 @@ main (int   argc,
     {
         ParmParse pp;
 
-        max_step  = 10;
+        max_step  = 1000;
         strt_time =  0.0;
         stop_time = 1.0;
 
@@ -55,25 +55,19 @@ main (int   argc,
 	    //
 	    // Do a coarse timestep.  Recursively calls timeStep()
 	    //
-	  std::cout<<"Hello2"<<std::endl;
 	    amr.coarseTimeStep(stop_time);
 	}
-	std::cout<<"Hello2"<<std::endl;
 	// Write final checkpoint and plotfile
 	if (amr.stepOfLastCheckPoint() < amr.levelSteps(0)) {
 	    amr.checkPoint();
 	}
-	std::cout<<"Hello3"<<std::endl;
 	if (amr.stepOfLastPlotFile() < amr.levelSteps(0)) {
 	    amr.writePlotFile();
 	}
-	std::cout<<"Hello4"<<std::endl;
     }
 
     Real dRunTime2 = amrex::second() - dRunTime1;
-    std::cout<<"Hello5"<<std::endl;
     ParallelDescriptor::ReduceRealMax(dRunTime2, ParallelDescriptor::IOProcessorNumber());
-    std::cout<<"Hello6"<<std::endl;
     amrex::Print() << "Run time = " << dRunTime2 << std::endl;
 
     amrex::Finalize();
