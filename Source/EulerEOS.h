@@ -6,9 +6,9 @@ public:
   
   EulerEOS(double);
 
-  var_array prim_to_con(var_array);
+  var_array prim_to_con(var_array, int);
 
-  var_array con_to_prim(var_array);
+  var_array con_to_prim(var_array, int);
   
   double flux_fn_rho(double, double);
 
@@ -17,6 +17,8 @@ public:
   double flux_fn_E(double, double, double);
 
   var_array Euler_flux_fn(var_array, var_array);
+
+  var_array Euler_flux_fn_Y(var_array, var_array);
 
 private:
 
