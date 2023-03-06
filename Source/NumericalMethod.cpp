@@ -3,19 +3,37 @@
 NumericalMethod::NumericalMethod(double gamma)
   :gamma(gamma), eos(gamma){};
 
-var_array NumericalMethod::wavespeed(var_array uL, var_array uR, var_array uL_prim, var_array uR_prim)
+var_array NumericalMethod::wavespeed_x(var_array uL, var_array uR, var_array uL_prim, var_array uR_prim)
 {
   var_array wavespeeds;
 
   double csL = sqrt((gamma*uL_prim[2])/uL[0]);
   double csR = sqrt((gamma*uR_prim[2])/uR[0]);
 
-  wavespeeds[0] = uL_prim[1] - csL;
-  wavespeeds[1] = uR_prim[1] + csR;
+  double Splus = std::max(fabs(uL_prim[1])+csL, fabs(uR_prim[1]+csR));
+  wavespeeds[0] = -Splus;
+  wavespeeds[1] = +Splus;
   wavespeeds[2] = (uR_prim[2] - uL_prim[2] + uL[0]*uL_prim[1]*(wavespeeds[0] - uL_prim[1]) - uR[0]*uR_prim[1]*(wavespeeds[1] - uR_prim[1])) / (uL[0]*(wavespeeds[0] - uL_prim[1]) - uR[0]*(wavespeeds[1] - uR_prim[1]));
 
   return wavespeeds;
 }
+
+var_array NumericalMethod::wavespeed_y(var_array uL, var_array uR, var_array uL_prim, var_array uR_prim)
+{
+  var_array wavespeeds;
+
+
+  double csL = sqrt((gamma*uL_prim[3])/uL[0]);
+  double csR = sqrt((gamma*uR_prim[3])/uR[0]);
+
+  double Splus = std::max(fabs(uL_prim[3])+csL, fabs(uR_prim[3]+csR));
+  wavespeeds[0] = uL_prim[3] - csL;
+  wavespeeds[1] = uR_prim[3] + csR;
+  wavespeeds[2] = (uR_prim[3] - uL_prim[3] + uL[0]*uL_prim[3]*(wavespeeds[0] - uL_prim[3]) - uR[0]*uR_prim[3]*(wavespeeds[1] - uR_prim[3])) / (uL[0]*(wavespeeds[0] - uL_prim[3]) - uR[0]*(wavespeeds[1] - uR_prim[3]));
+
+  return wavespeeds;
+}
+
 
 double NumericalMethod::deltai_func(double u_i, double u_iPlus1, double u_iMinus1, double w=0.0)
 {
@@ -27,7 +45,7 @@ double NumericalMethod::slope_limiter(double u_i, double u_iPlus1, double u_iMin
 {
   // calculates slope ratio value
   
-  if ((u_iPlus1 - u_i) == 0.0){
+  if (fabs(u_iPlus1 - u_i) <= 0.0){
     return 0.0;
   }
   return (u_i - u_iMinus1) / (u_iPlus1 - u_i);
@@ -175,61 +193,6 @@ var_array NumericalMethod::fHLLC(var_array uL, var_array uR, var_array uLHLLC, v
   return fHLLC;
 }
 
-var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_array u_iPlus1, var_array u_iPlus2, double dx, double dt)
-{
-
-  var_array uL, uR, uLPlus1, uRPlus1;
-
-  //std::cout<<"dx: "<<dx<<", dt: "<<dt<<std::endl;
-
-  for (int i=0; i<uL.size(); i++)
-    {
-      uL[i] = reconstruction_uL(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
-      uR[i] = reconstruction_uR(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
-      uLPlus1[i] = reconstruction_uL(u_iPlus1[i], u_iPlus2[i], u_i[i], Limiters::Minbee);
-      uRPlus1[i] = reconstruction_uR(u_iPlus1[i], u_iPlus2[i], u_i[i], Limiters::Minbee);	
-    }
-
-  // LOOK at what all of these look like!
-
-  var_array uLhalf = uL_half_update(uL, uR, dt, dx);
-  var_array uRhalf = uR_half_update(uL, uR, dt, dx);
-
-  var_array uLhalfPlus1 = uL_half_update(uLPlus1, uRPlus1, dt, dx);
-  var_array uRhalfPlus1 = uR_half_update(uLPlus1, uRPlus1, dt, dx);
-  
-  var_array uLhalf_prim = eos.con_to_prim(uLhalf);
-  var_array uRhalf_prim = eos.con_to_prim(uRhalf);
-
-  var_array uLhalfPlus1_prim = eos.con_to_prim(uLhalfPlus1);
-  var_array uRhalfPlus1_prim = eos.con_to_prim(uRhalfPlus1);
-  
-  var_array uRflux = eos.Euler_flux_fn(uRhalf, uRhalf_prim);
-  var_array uLflux = eos.Euler_flux_fn(uLhalf, uLhalf_prim);
-
-  var_array uRPlus1flux = eos.Euler_flux_fn(uRhalfPlus1, uRhalfPlus1_prim);
-  var_array uLPlus1flux = eos.Euler_flux_fn(uLhalfPlus1, uLhalfPlus1_prim);
-
-  var_array wavespeeds = wavespeed(uRhalf, uLhalfPlus1, uRhalf_prim, uLhalfPlus1_prim); // watch out <- am I doing the correct variables here - check what is being fed from AMReX
-
-  double SL=wavespeeds[0], SR=wavespeeds[1], S_star=wavespeeds[2];
-  
-  var_array uLHLLC = uHLLC(uRhalf, uRhalf_prim, SL, S_star);
-  var_array uRHLLC = uHLLC(uLhalfPlus1, uLhalfPlus1_prim, SR, S_star);
-
-  var_array fhalf = fHLLC(uRhalf, uLhalfPlus1, uLHLLC, uRHLLC, uRflux, uLPlus1flux, SL, SR, S_star);
-  /*								  
-  std::cout<<"break"<<std::endl;
-  for (int i=0; i<uL.size(); i++)
-    {
-      std::cout<<fhalf[i]<<std::endl;
-    }
-  std::cout<<std::endl;
-  */
-
-  return fhalf;
-}
-
 var_array NumericalMethod::uL_half_update(var_array uL, var_array uR, double dt, double dx)
 {
   // data
@@ -261,4 +224,51 @@ var_array NumericalMethod::uR_half_update(var_array uL, var_array uR, double dt,
 
   return uRhalf;
   
+}
+
+var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_array u_iPlus1, var_array u_iPlus2, double dx, double dt)
+{
+
+  var_array uL, uR, uLPlus1, uRPlus1;
+
+  //std::cout<<"dx: "<<dx<<", dt: "<<dt<<std::endl;
+  for (int i=0; i<uL.size(); i++)
+    {
+      uL[i] = reconstruction_uL(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
+      uR[i] = reconstruction_uR(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
+      uLPlus1[i] = reconstruction_uL(u_iPlus1[i], u_iPlus2[i], u_i[i], Limiters::Minbee);
+      uRPlus1[i] = reconstruction_uR(u_iPlus1[i], u_iPlus2[i], u_i[i], Limiters::Minbee);
+    }
+
+  var_array uLhalf = uL_half_update(uL, uR, dt, dx);
+  var_array uRhalf = uR_half_update(uL, uR, dt, dx);
+
+  var_array uLhalfPlus1 = uL_half_update(uLPlus1, uRPlus1, dt, dx);
+  var_array uRhalfPlus1 = uR_half_update(uLPlus1, uRPlus1, dt, dx);
+  
+  var_array uLhalf_prim = eos.con_to_prim(uLhalf);
+  var_array uRhalf_prim = eos.con_to_prim(uRhalf);
+
+  var_array uLhalfPlus1_prim = eos.con_to_prim(uLhalfPlus1);
+  var_array uRhalfPlus1_prim = eos.con_to_prim(uRhalfPlus1);
+  
+  var_array uRflux = eos.Euler_flux_fn(uRhalf, uRhalf_prim);
+  var_array uLflux = eos.Euler_flux_fn(uLhalf, uLhalf_prim);
+
+  var_array uRPlus1flux = eos.Euler_flux_fn(uRhalfPlus1, uRhalfPlus1_prim);
+  var_array uLPlus1flux = eos.Euler_flux_fn(uLhalfPlus1, uLhalfPlus1_prim);
+
+  var_array uL_prim=eos.con_to_prim(uL), uR_prim=eos.con_to_prim(uR);
+
+  var_array wavespeeds = wavespeed_x(uRhalf, uLhalfPlus1, uRhalf_prim, uLhalfPlus1_prim); // watch out <- am I doing the correct variables here - check what is being fed from AMReX
+
+  double SL=wavespeeds[0], SR=wavespeeds[1], S_star=wavespeeds[2];
+
+  //std::cout<<"Speeds: "<<SL<<" "<<SR<<" "<<S_star<<std::endl;
+  
+  var_array uLHLLC = uHLLC(uRhalf, uRhalf_prim, SL, S_star);
+  var_array uRHLLC = uHLLC(uLhalfPlus1, uLhalfPlus1_prim, SR, S_star);
+  var_array fhalf = fHLLC(uRhalf, uLhalfPlus1, uLHLLC, uRHLLC, uRflux, uLPlus1flux, SL, SR, S_star);
+  
+  return fhalf;
 }

@@ -38,8 +38,10 @@ private:
 
   double limiterXi(double, Limiters);
 
-  var_array wavespeed(var_array, var_array, var_array, var_array);
+  var_array wavespeed_x(var_array, var_array, var_array, var_array);
 
+  var_array wavespeed_y(var_array, var_array, var_array, var_array);
+  
   var_array uHLLC(var_array, var_array, double, double);
 
   var_array fHLLC(var_array, var_array, var_array, var_array, var_array, var_array, double, double, double);
