@@ -18,6 +18,7 @@ int      AmrLevelAdv::NUM_STATE       = 5;  // Three variable in the state
 int      AmrLevelAdv::NUM_GROW        = 2;  // number of ghost cells
 
 double gam=1.4; // PW Changes - gam value for simulation
+int DIM = 1; // PW Changes - Setting DIMs for simulation
 InitialCondTests Test; // PW Changes - Object containing initial conditions
 EulerEOS euler_EOS(gam); // PW Changes - Object for EulerEOS methods
 NumericalMethod HLLC(gam); // PW Changes - Adding Numerical Method class
@@ -161,15 +162,14 @@ AmrLevelAdv::variableSetUp ()
   desc_lst.setComponent(Phi_Type, 0, "rho", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to density
   desc_lst.setComponent(Phi_Type, 1, "momx", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum x
   desc_lst.setComponent(Phi_Type, 2, "E", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to total energy
-  desc_lst.setComponent(Phi_Type, 3, "ux", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to pressure
-  desc_lst.setComponent(Phi_Type, 4, "p", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity x
-  /*
-  if (dim == 2)
+  desc_lst.setComponent(Phi_Type, 3, "ux", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity x
+  desc_lst.setComponent(Phi_Type, 4, "p", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to pressure
+
+  if (DIM == 2)
     {
-      desc_lst.setComponent(Phi_Type, 5, "momy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum y
-      desc_lst.setComponent(Phi_Type, 6, "uy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity y   
+      desc_lst.setComponent(Phi_Type, 5, "uy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity y
+      desc_lst.setComponent(Phi_Type, 6, "momy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum y
     }
-  */
 }
 
 //
@@ -234,15 +234,17 @@ AmrLevelAdv::initData ()
 	{
 	  const Real x = probLoX + (double(i)+0.5) * dX;
 
-	  var_array prim_vals = Test.Test1D_2(x);
-	  var_array con_vals = euler_EOS.prim_to_con(prim_vals);
-	  std::cout<<"Initial Data: "<<x<<" "<<prim_vals[0]<<" "<<prim_vals[1]<<" "<<prim_vals[2]<<std::endl;
-
+	  var_array prim_vals = Test.Test1D_1(x);
+	  var_array con_vals = euler_EOS.prim_to_con(prim_vals, DIM);
+	  std::cout<<"Prim: "<<prim_vals[0]<<" "<<prim_vals[1]<<" "<<prim_vals[2]<<std::endl;
+	  std::cout<<"Con: "<<con_vals[0]<<" "<<con_vals[1]<<" "<<con_vals[2]<<std::endl;
+	  
 	  arr(i, j, k, 0) = con_vals[0];
 	  arr(i, j, k, 1) = con_vals[1];
 	  arr(i, j, k, 2) = con_vals[2];
 	  arr(i, j, k, 3) = prim_vals[1];
 	  arr(i, j, k, 4) = prim_vals[2];
+	  std::cout<<"Initial Data: "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)<<" "<<arr(i,j,k,2)<<" "<<arr(i,j,k,3)<<" "<<arr(i,j,k,4)<<std::endl;
 	}
       }
     }
@@ -335,7 +337,6 @@ AmrLevelAdv::advance (Real time,
                       int  iteration,
                       int  ncycle)
 {
-  std::cout<<"IN ADVANCE"<<std::endl;
   
   std::ostringstream ss;
   MultiFab& S_mm = get_new_data(Phi_Type);
@@ -369,7 +370,6 @@ AmrLevelAdv::advance (Real time,
 
   const Real* dx = geom.CellSize();
   const Real* prob_lo = geom.ProbLo();
-  std::cout<<"dx: "<<dx[0]<<std::endl;
   //
   // Get pointers to Flux registers, or set pointer to zero if not there.
   //
@@ -381,6 +381,7 @@ AmrLevelAdv::advance (Real time,
   // If we are not on the finest level, fluxes may need correcting
   // from those from finer levels.  To start this process, we set the
   // flux register values to zero
+  
   if (do_reflux && level < finest_level) {
     fine = &getFluxReg(level+1);
     fine->setVal(0.0);
@@ -423,7 +424,7 @@ AmrLevelAdv::advance (Real time,
   // FillBoundary call will fill overlapping boundaries (with periodic
   // domains effectively being overlapping).  It also takes care of
   // AMR patch and CPU boundaries.
-
+  
   Sborder.FillBoundary(geom.periodicity());
   TransmissiveBoundaryConds(Sborder);
 
@@ -472,12 +473,9 @@ AmrLevelAdv::advance (Real time,
 	    std::cout<<"u_iMinus1: "<<u_iMinus1[0]<<" "<<u_iMinus1[1]<<" "<<u_iMinus1[2]<<std::endl;
 	    std::cout<<"u_iPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<std::endl;
 	    std::cout<<"u_iPlus2: "<<u_iPlus2[0]<<" "<<u_iPlus2[1]<<" "<<u_iPlus2[2]<<std::endl;
-	    
-	    std::cout<<"x"<<x<<", dx:"<<dx<<std::endl;
 	    */
 	    // PW Changes - HLLC flux calculation
-	    var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt);
-
+	    var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
 	    // PW Changes - Adding flux calculation into flux array
 	    for (int z=0; z<NUM_STATE-2; z++)
 	      {
@@ -502,7 +500,7 @@ AmrLevelAdv::advance (Real time,
 		arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
 	      }
 	    var_array con_vals = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
-	    var_array prim_vals = euler_EOS.con_to_prim(con_vals);
+	    var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
 	    //std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
 	    arr(i,j,k,3) = arr(i,j,k,1)/arr(i,j,k,0);
 	    arr(i,j,k,4) = prim_vals[2];
@@ -659,7 +657,7 @@ AmrLevelAdv::estTimeStep (Real)
 	    {
 	      u_con[z] = arr(i,j,k,z);
 	    }
-	  var_array u_prim = euler_EOS.prim_to_con(u_con);
+	  var_array u_prim = euler_EOS.prim_to_con(u_con, DIM);
 
 	  double cs = sqrt((gam*u_prim[2])/u_prim[0]);
 	  double wavespeed = fabs(u_prim[1]) + cs;
