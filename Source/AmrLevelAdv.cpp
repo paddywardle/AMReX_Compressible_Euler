@@ -438,101 +438,202 @@ AmrLevelAdv::advance (Real time,
     const int jOffset = ( d == 1 ? 1 : 0);
     const int kOffset = ( d == 2 ? 1 : 0);
 
-    // Loop over all the patches at this level
-    for (MFIter mfi(Sborder, true); mfi.isValid(); ++mfi)
-    {
-      const Box& bx = mfi.tilebox();
-
-      const Dim3 lo = lbound(bx);
-      const Dim3 hi = ubound(bx);
-
-      // Indexable arrays for the data, and the directional flux
-      // Based on the vertex-centred definition of the flux array, the
-      // data array runs from e.g. [0,N] and the flux array from [0,N+1]
-      const auto& arr = Sborder.array(mfi);
-      const auto& fluxArr = fluxes[d].array(mfi);
-      double x=0;
-      // flux calculation loop
-      for(int k = lo.z; k <= hi.z+kOffset; k++)
+    if (d == 0)
       {
-	for(int j = lo.y; j <= hi.y+jOffset; j++)
-	{
-	  for(int i = lo.x; i <= hi.x+iOffset; i++)
+	// Loop over all the patches at this level
+	for (MFIter mfi(Sborder, true); mfi.isValid(); ++mfi)
 	  {
-	    // PW Changes - getting values for HLLC
-	    var_array u_i = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE-2);
-	    var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, NUM_STATE-2);
-	    var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
-	    var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE-2);
-	    double dxval = dx[d];
-	    x += dxval;
-	    /*
-	    std::cout<<"Indices: "<<i<<" "<<j<<" "<<k<<" "<<NUM_STATE-2<<std::endl;
-	    std::cout<<"lohi: "<<lo.x<<" "<<hi.x<<" "<<hi.x+iOffset<<std::endl;
-	    std::cout<<"u_i: "<<u_i[0]<<" "<<u_i[1]<<" "<<u_i[2]<<std::endl;
-	    std::cout<<"u_iMinus1: "<<u_iMinus1[0]<<" "<<u_iMinus1[1]<<" "<<u_iMinus1[2]<<std::endl;
-	    std::cout<<"u_iPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<std::endl;
-	    std::cout<<"u_iPlus2: "<<u_iPlus2[0]<<" "<<u_iPlus2[1]<<" "<<u_iPlus2[2]<<std::endl;
-	    */
-	    // PW Changes - HLLC flux calculation
-	    var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
-	    // PW Changes - Adding flux calculation into flux array
-	    for (int z=0; z<NUM_STATE-2; z++)
-	      {
-		fluxArr(i,j,k,z) = HLLC_flux[z];
-	      }
-	    //std::cout<<"HLLC flux: "<<HLLC_flux[0]<<" "<<HLLC_flux[1]<<" "<<HLLC_flux[2]<<std::endl;
-	  }
-	}
-      }
+	    const Box& bx = mfi.tilebox();
 
-      for(int k = lo.z; k <= hi.z; k++)
-      {
-	for(int j = lo.y; j <= hi.y; j++)
-	{
-	  for(int i = lo.x; i <= hi.x; i++)
-	  {
-	    // PW Changes - Adding loop to go through variables in arr
-	    for (int z=0; z<NUM_STATE-2; z++)
-	      {
-		// Conservative update formula
-		// PW Comments -> just need to alter this to add extra variable in 2D
-		arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
-	      }
-	    var_array con_vals = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
-	    var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
-	    //std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
-	    arr(i,j,k,3) = arr(i,j,k,1)/arr(i,j,k,0);
-	    arr(i,j,k,4) = prim_vals[2];
-	  }
-	}
-      }
-    }
+	    const Dim3 lo = lbound(bx);
+	    const Dim3 hi = ubound(bx);
 
-    // We need to compute boundary conditions again after each update
-    Sborder.FillBoundary(geom.periodicity());
-    TransmissiveBoundaryConds(Sborder);
+	    // Indexable arrays for the data, and the directional flux
+	    // Based on the vertex-centred definition of the flux array, the
+	    // data array runs from e.g. [0,N] and the flux array from [0,N+1]
+	    const auto& arr = Sborder.array(mfi);
+	    const auto& fluxArr = fluxes[d].array(mfi);
+	    double x=0;
+	    // flux calculation loop
+	    for(int k = lo.z; k <= hi.z+kOffset; k++)
+	      {
+		for(int j = lo.y; j <= hi.y+jOffset; j++)
+		  {
+		    for(int i = lo.x; i <= hi.x+iOffset; i++)
+		      {
+			// PW Changes - getting values for HLLC
+			var_array u_i = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE-2);
+			var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, NUM_STATE-2);
+			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
+			var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE-2);
+			double dxval = dx[d];
+			x += dxval;
+			/*
+			  std::cout<<"Indices: "<<i<<" "<<j<<" "<<k<<" "<<NUM_STATE-2<<std::endl;
+			  std::cout<<"lohi: "<<lo.x<<" "<<hi.x<<" "<<hi.x+iOffset<<std::endl;
+			  std::cout<<"u_i: "<<u_i[0]<<" "<<u_i[1]<<" "<<u_i[2]<<std::endl;
+			  std::cout<<"u_iMinus1: "<<u_iMinus1[0]<<" "<<u_iMinus1[1]<<" "<<u_iMinus1[2]<<std::endl;
+			  std::cout<<"u_iPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<std::endl;
+			  std::cout<<"u_iPlus2: "<<u_iPlus2[0]<<" "<<u_iPlus2[1]<<" "<<u_iPlus2[2]<<std::endl;
+			*/
+			// PW Changes - HLLC flux calculation
+			var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
+			// PW Changes - Adding flux calculation into flux array
+			for (int z=0; z<NUM_STATE-2; z++)
+			  {
+			    fluxArr(i,j,k,z) = HLLC_flux[z];
+			  }
+			//std::cout<<"HLLC flux: "<<HLLC_flux[0]<<" "<<HLLC_flux[1]<<" "<<HLLC_flux[2]<<std::endl;
+		      }
+		  }
+	      }
+
+	    for(int k = lo.z; k <= hi.z; k++)
+	      {
+		for(int j = lo.y; j <= hi.y; j++)
+		  {
+		    for(int i = lo.x; i <= hi.x; i++)
+		      {
+			// PW Changes - Adding loop to go through variables in arr
+			for (int z=0; z<NUM_STATE-2; z++)
+			  {
+			    // Conservative update formula
+			    // PW Comments -> just need to alter this to add extra variable in 2D
+			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
+			  }
+			var_array con_vals = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
+			var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
+			//std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
+			arr(i,j,k,3) = arr(i,j,k,1)/arr(i,j,k,0);
+			arr(i,j,k,4) = prim_vals[2];
+		      }
+		  }
+	      }
+	  }
+
+	// We need to compute boundary conditions again after each update
+	Sborder.FillBoundary(geom.periodicity());
+	TransmissiveBoundaryConds(Sborder);
     
-    // The fluxes now need scaling for the reflux command.
-    // This scaling is by the size of the boundary through which the flux passes, e.g. the x-flux needs scaling by the dy, dz and dt
-    if(do_reflux)
-    {
-      Real scaleFactor = dt;
-      for(int scaledir = 0; scaledir < amrex::SpaceDim; ++scaledir)
-      {
-	// Fluxes don't need scaling by dx[d]
-	if(scaledir == d)
-	{
-	  continue;
-	}
-	scaleFactor *= dx[scaledir];
+	// The fluxes now need scaling for the reflux command.
+	// This scaling is by the size of the boundary through which the flux passes, e.g. the x-flux needs scaling by the dy, dz and dt
+	if(do_reflux)
+	  {
+	    Real scaleFactor = dt;
+	    for(int scaledir = 0; scaledir < amrex::SpaceDim; ++scaledir)
+	      {
+		// Fluxes don't need scaling by dx[d]
+		if(scaledir == d)
+		  {
+		    continue;
+		  }
+		scaleFactor *= dx[scaledir];
+	      }
+	    // The mult function automatically multiplies entries in a multifab by a scalar
+	    // scaleFactor: The scalar to multiply by
+	    // 0: The first data index in the multifab to multiply
+	    // NUM_STATE:  The total number of data indices that will be multiplied
+	    fluxes[d].mult(scaleFactor, 0, NUM_STATE);
+	  }
       }
-      // The mult function automatically multiplies entries in a multifab by a scalar
-      // scaleFactor: The scalar to multiply by
-      // 0: The first data index in the multifab to multiply
-      // NUM_STATE:  The total number of data indices that will be multiplied
-      fluxes[d].mult(scaleFactor, 0, NUM_STATE);
-    }
+
+    // PW Changes - Adding loop for Y dimension
+    else if (d == 1)
+      {
+	// Loop over all the patches at this level
+	for (MFIter mfi(Sborder, true); mfi.isValid(); ++mfi)
+	  {
+	    const Box& bx = mfi.tilebox();
+
+	    const Dim3 lo = lbound(bx);
+	    const Dim3 hi = ubound(bx);
+
+	    // Indexable arrays for the data, and the directional flux
+	    // Based on the vertex-centred definition of the flux array, the
+	    // data array runs from e.g. [0,N] and the flux array from [0,N+1]
+	    const auto& arr = Sborder.array(mfi);
+	    const auto& fluxArr = fluxes[d].array(mfi);
+	    double x=0;
+	    // flux calculation loop
+	    for(int k = lo.z; k <= hi.z+kOffset; k++)
+	      {
+		for(int j = lo.y; j <= hi.y+jOffset; j++)
+		  {
+		    for(int i = lo.x; i <= hi.x+iOffset; i++)
+		      {
+			// PW Changes - getting values for HLLC
+			var_array u_i = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE-2);
+			var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, NUM_STATE-2);
+			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
+			var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE-2);
+			/*
+			  std::cout<<"Indices: "<<i<<" "<<j<<" "<<k<<" "<<NUM_STATE-2<<std::endl;
+			  std::cout<<"lohi: "<<lo.x<<" "<<hi.x<<" "<<hi.x+iOffset<<std::endl;
+			  std::cout<<"u_i: "<<u_i[0]<<" "<<u_i[1]<<" "<<u_i[2]<<std::endl;
+			  std::cout<<"u_iMinus1: "<<u_iMinus1[0]<<" "<<u_iMinus1[1]<<" "<<u_iMinus1[2]<<std::endl;
+			  std::cout<<"u_iPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<std::endl;
+			  std::cout<<"u_iPlus2: "<<u_iPlus2[0]<<" "<<u_iPlus2[1]<<" "<<u_iPlus2[2]<<std::endl;
+			*/
+			// PW Changes - Y HLLC flux calculation
+			var_array HLLC_flux = HLLC.HLLC_flux_Y(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
+			// PW Changes - Adding flux calculation into flux array
+			for (int z=0; z<NUM_STATE-2; z++)
+			  {
+			    fluxArr(i,j,k,z) = HLLC_flux[z];
+			  }
+			//std::cout<<"HLLC flux: "<<HLLC_flux[0]<<" "<<HLLC_flux[1]<<" "<<HLLC_flux[2]<<std::endl;
+		      }
+		  }
+	      }
+
+	    for(int k = lo.z; k <= hi.z; k++)
+	      {
+		for(int j = lo.y; j <= hi.y; j++)
+		  {
+		    for(int i = lo.x; i <= hi.x; i++)
+		      {
+			// PW Changes - Adding loop to go through variables in arr
+			for (int z=0; z<NUM_STATE-2; z++)
+			  {
+			    // Conservative update formula
+			    // PW Comments -> just need to alter this to add extra variable in 2D
+			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
+			  }
+			var_array con_vals = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
+			var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
+			//std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
+			arr(i,j,k,3) = arr(i,j,k,1)/arr(i,j,k,0);
+			arr(i,j,k,4) = prim_vals[2];
+		      }
+		  }
+	      }
+	  }
+
+	// We need to compute boundary conditions again after each update
+	Sborder.FillBoundary(geom.periodicity());
+	TransmissiveBoundaryConds(Sborder);
+    
+	// The fluxes now need scaling for the reflux command.
+	// This scaling is by the size of the boundary through which the flux passes, e.g. the x-flux needs scaling by the dy, dz and dt
+	if(do_reflux)
+	  {
+	    Real scaleFactor = dt;
+	    for(int scaledir = 0; scaledir < amrex::SpaceDim; ++scaledir)
+	      {
+		// Fluxes don't need scaling by dx[d]
+		if(scaledir == d)
+		  {
+		    continue;
+		  }
+		scaleFactor *= dx[scaledir];
+	      }
+	    // The mult function automatically multiplies entries in a multifab by a scalar
+	    // scaleFactor: The scalar to multiply by
+	    // 0: The first data index in the multifab to multiply
+	    // NUM_STATE:  The total number of data indices that will be multiplied
+	    fluxes[d].mult(scaleFactor, 0, NUM_STATE);
+	  }
+      }
     
   }
   // The updated data is now copied to the S_new multifab.  This means
