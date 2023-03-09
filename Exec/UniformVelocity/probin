@@ -1,7 +1,8 @@
 &tagging
   
-   phierr = 1.01d0, 1.02d0, 1.5d0
-
-   max_phierr_lev = 10
+   !phierr = 1.01d0, 1.02d0, 1.5d0
+   phigrad = 0.05d0 0.05d0
+   !max_phierr_lev = 10
+   max_phigrad_lev = 10
 
 /
