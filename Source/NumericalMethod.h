@@ -20,6 +20,10 @@ public:
 
   var_array uR_half_update(var_array, var_array, double, double, int);
 
+  var_array uL_half_updateY(var_array, var_array, double, double, int);
+
+  var_array uR_half_updateY(var_array, var_array, double, double, int);
+
 private:
 
   double gamma;

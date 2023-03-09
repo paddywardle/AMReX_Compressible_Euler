@@ -25,13 +25,13 @@ var_array NumericalMethod::wavespeed_y(var_array uL, var_array uR, var_array uL_
   var_array wavespeeds;
 
 
-  double csL = sqrt((gamma*uL_prim[3])/uL[0]);
-  double csR = sqrt((gamma*uR_prim[3])/uR[0]);
+  double csL = sqrt((gamma*uL_prim[2])/uL[0]);
+  double csR = sqrt((gamma*uR_prim[2])/uR[0]);
 
   double Splus = std::max(fabs(uL_prim[3])+csL, fabs(uR_prim[3]+csR));
-  wavespeeds[0] = uL_prim[3] - csL;
-  wavespeeds[1] = uR_prim[3] + csR;
-  wavespeeds[2] = (uR_prim[3] - uL_prim[3] + uL[0]*uL_prim[3]*(wavespeeds[0] - uL_prim[3]) - uR[0]*uR_prim[3]*(wavespeeds[1] - uR_prim[3])) / (uL[0]*(wavespeeds[0] - uL_prim[3]) - uR[0]*(wavespeeds[1] - uR_prim[3]));
+  wavespeeds[0] = -Splus;
+  wavespeeds[1] = +Splus;
+  wavespeeds[2] = (uR_prim[2] - uL_prim[2] + uL[0]*uL_prim[3]*(wavespeeds[0] - uL_prim[3]) - uR[0]*uR_prim[3]*(wavespeeds[1] - uR_prim[3])) / (uL[0]*(wavespeeds[0] - uL_prim[3]) - uR[0]*(wavespeeds[1] - uR_prim[3]));
 
   return wavespeeds;
 }
@@ -287,6 +287,38 @@ var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_arr
   return fhalf;
 }
 
+var_array NumericalMethod::uL_half_updateY(var_array uL, var_array uR, double dt, double dx, int dim)
+{
+  // data
+  var_array uL_flux = eos.Euler_flux_fn_Y(uL, eos.con_to_prim(uL, dim));
+  var_array uR_flux = eos.Euler_flux_fn_Y(uR, eos.con_to_prim(uR, dim));
+  var_array uLhalf;
+
+  for (int i=0; i<uLhalf.size(); i++)
+    {
+      uLhalf[i] = uL[i] - 0.5 * (dt / dx) * (uR_flux[i] - uL_flux[i]);
+    }
+
+  return uLhalf;
+  
+}
+
+var_array NumericalMethod::uR_half_updateY(var_array uL, var_array uR, double dt, double dx, int dim)
+{
+  // data
+  var_array uL_flux = eos.Euler_flux_fn_Y(uL, eos.con_to_prim(uL, dim));
+  var_array uR_flux = eos.Euler_flux_fn_Y(uR, eos.con_to_prim(uR, dim));
+  var_array uRhalf;
+
+  for (int i=0; i<uRhalf.size(); i++)
+    {
+      uRhalf[i] = uR[i] - 0.5 * (dt / dx) * (uR_flux[i] - uL_flux[i]);
+    }
+
+  return uRhalf;
+  
+}
+
 var_array NumericalMethod::HLLC_flux_Y(var_array u_i, var_array u_iMinus1, var_array u_iPlus1, var_array u_iPlus2, double dx, double dt, int dim)
 {
 
@@ -301,21 +333,22 @@ var_array NumericalMethod::HLLC_flux_Y(var_array u_i, var_array u_iMinus1, var_a
       uRPlus1[i] = reconstruction_uR(u_iPlus1[i], u_iPlus2[i], u_i[i], Limiters::Minbee);
     }
 
-  var_array uLhalf = uL_half_update(uL, uR, dt, dx, dim);
-  var_array uRhalf = uR_half_update(uL, uR, dt, dx, dim);
+  var_array uLhalf = uL_half_updateY(uL, uR, dt, dx, dim);
+  var_array uRhalf = uR_half_updateY(uL, uR, dt, dx, dim);
 
-  var_array uLhalfPlus1 = uL_half_update(uLPlus1, uRPlus1, dt, dx, dim);
-  var_array uRhalfPlus1 = uR_half_update(uLPlus1, uRPlus1, dt, dx, dim);
+  var_array uLhalfPlus1 = uL_half_updateY(uLPlus1, uRPlus1, dt, dx, dim);
+  var_array uRhalfPlus1 = uR_half_updateY(uLPlus1, uRPlus1, dt, dx, dim);
   
   var_array uLhalf_prim = eos.con_to_prim(uLhalf, dim);
   var_array uRhalf_prim = eos.con_to_prim(uRhalf, dim);
 
   var_array uLhalfPlus1_prim = eos.con_to_prim(uLhalfPlus1, dim);
   var_array uRhalfPlus1_prim = eos.con_to_prim(uRhalfPlus1, dim);
-  
+  //std::cout<<"uR: "<<uRhalf[0]<<" "<<uRhalf[1]<<" "<<uRhalf[2]<<" "<<uRhalf[3]<<std::endl;
+  //std::cout<<"uRPrim: "<<uRhalf_prim[0]<<" "<<uRhalf_prim[1]<<" "<<uRhalf_prim[2]<<" "<<uRhalf_prim[3]<<std::endl;
   var_array uRflux = eos.Euler_flux_fn_Y(uRhalf, uRhalf_prim);
   var_array uLflux = eos.Euler_flux_fn_Y(uLhalf, uLhalf_prim);
-
+  //std::cout<<"uRflux: "<<uRflux[0]<<" "<<uRflux[1]<<" "<<uRflux[2]<<" "<<uRflux[3]<<std::endl;
   var_array uRPlus1flux = eos.Euler_flux_fn_Y(uRhalfPlus1, uRhalfPlus1_prim);
   var_array uLPlus1flux = eos.Euler_flux_fn_Y(uLhalfPlus1, uLhalfPlus1_prim);
 
