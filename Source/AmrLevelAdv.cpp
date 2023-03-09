@@ -14,14 +14,15 @@ Real     AmrLevelAdv::cfl             = 0.9; // Default value - can be overwritt
 int      AmrLevelAdv::do_reflux       = 1;  
 
 // PW COMMENTS: Alter these based on simulation dimensions
-int      AmrLevelAdv::NUM_STATE       = 5;  // Three variable in the state
+int      AmrLevelAdv::NUM_STATE       = 8;  // Three variable in the state
 int      AmrLevelAdv::NUM_GROW        = 2;  // number of ghost cells
 
 double gam=1.4; // PW Changes - gam value for simulation
-int DIM = 1; // PW Changes - Setting DIMs for simulation
+int DIM = 2; // PW Changes - Setting DIMs for simulation
 InitialCondTests Test; // PW Changes - Object containing initial conditions
 EulerEOS euler_EOS(gam); // PW Changes - Object for EulerEOS methods
 NumericalMethod HLLC(gam); // PW Changes - Adding Numerical Method class
+int states_for_update = 4; 
 
 //
 //Default constructor.  Builds invalid object.
@@ -162,14 +163,11 @@ AmrLevelAdv::variableSetUp ()
   desc_lst.setComponent(Phi_Type, 0, "rho", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to density
   desc_lst.setComponent(Phi_Type, 1, "momx", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum x
   desc_lst.setComponent(Phi_Type, 2, "E", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to total energy
-  desc_lst.setComponent(Phi_Type, 3, "ux", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity x
-  desc_lst.setComponent(Phi_Type, 4, "p", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to pressure
-
-  if (DIM == 2)
-    {
-      desc_lst.setComponent(Phi_Type, 5, "uy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity y
-      desc_lst.setComponent(Phi_Type, 6, "momy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum y
-    }
+  desc_lst.setComponent(Phi_Type, 3, "momy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum y
+  desc_lst.setComponent(Phi_Type, 4, "ux", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity x
+  desc_lst.setComponent(Phi_Type, 5, "uy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity y
+  desc_lst.setComponent(Phi_Type, 6, "p", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to pressure
+  desc_lst.setComponent(Phi_Type, 7, "e", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to internal energy
 }
 
 //
@@ -234,28 +232,44 @@ AmrLevelAdv::initData ()
 	{
 	  const Real x = probLoX + (double(i)+0.5) * dX;
 
-	  var_array prim_vals = Test.Test1D_1(x);
+	  var_array prim_vals = Test.Test1_diag(x, y);
 	  var_array con_vals = euler_EOS.prim_to_con(prim_vals, DIM);
-	  std::cout<<"Prim: "<<prim_vals[0]<<" "<<prim_vals[1]<<" "<<prim_vals[2]<<std::endl;
-	  std::cout<<"Con: "<<con_vals[0]<<" "<<con_vals[1]<<" "<<con_vals[2]<<std::endl;
-	  
-	  arr(i, j, k, 0) = con_vals[0];
-	  arr(i, j, k, 1) = con_vals[1];
-	  arr(i, j, k, 2) = con_vals[2];
-	  arr(i, j, k, 3) = prim_vals[1];
-	  arr(i, j, k, 4) = prim_vals[2];
-	  std::cout<<"Initial Data: "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)<<" "<<arr(i,j,k,2)<<" "<<arr(i,j,k,3)<<" "<<arr(i,j,k,4)<<std::endl;
+	  int side=1; // 0 == x aligned, 1==y aligned
+
+	  arr(i, j, k, 0) = con_vals[0]; // density
+	  arr(i, j, k, 1) = con_vals[1]; // momentum x
+	  arr(i, j, k, 2) = con_vals[2]; // energy
+	  arr(i, j, k, 3) = con_vals[3]; // momentum y
+	  arr(i, j, k, 4) = prim_vals[1]; // velocity x
+	  arr(i, j, k, 5) = prim_vals[3]; // velocity y
+	  arr(i, j, k, 6) = prim_vals[2]; // pressure
+	  arr(i, j, k, 7) = prim_vals[2] / ((gam - 1.0)*con_vals[0]);
+	  /*
+	  else if (side == 1)
+	    {
+	      arr(i, j, k, 0) = con_vals[0]; // density
+	      arr(i, j, k, 1) = con_vals[3]; // momentum x
+	      arr(i, j, k, 2) = con_vals[2]; // energy
+	      arr(i, j, k, 3) = con_vals[1]; // momentum y
+	      arr(i, j, k, 4) = prim_vals[3]; // velocity x
+	      arr(i, j, k, 5) = prim_vals[1]; // velocity y
+	      arr(i, j, k, 6) = prim_vals[2]; // pressure
+	      arr(i, j, k, 7) = prim_vals[2] / ((gam - 1.0)*con_vals[0]);
+	    }
+	  */
 	}
       }
     }
   }
 
   amrex::Print() << "rho max = " << S_new.max(0) << ", min = " << S_new.min(0)  << std::endl;
-  amrex::Print() << "mom max = " << S_new.max(1) << ", min = " << S_new.min(1)  << std::endl;
+  amrex::Print() << "mom_x max = " << S_new.max(1) << ", min = " << S_new.min(1)  << std::endl;
   amrex::Print() << "e max = " << S_new.max(2) << ", min = " << S_new.min(2)  << std::endl;
-  amrex::Print() << "v max = " << S_new.max(3) << ", min = " << S_new.min(3)  << std::endl;
-  amrex::Print() << "p max = " << S_new.max(4) << ", min = " << S_new.min(4)  << std::endl;
-  
+  amrex::Print() << "mom_y max = " << S_new.max(3) << ", min = " << S_new.min(3)  << std::endl;
+  amrex::Print() << "ux max = " << S_new.max(4) << ", min = " << S_new.min(4)  << std::endl;
+  amrex::Print() << "uy max = " << S_new.max(5) << ", min = " << S_new.min(5)  << std::endl;
+  amrex::Print() << "p max = " << S_new.max(6) << ", min = " << S_new.min(6)  << std::endl;
+  amrex::Print() << "e max = " << S_new.max(7) << ", min = " << S_new.min(7)  << std::endl;
 
   if (verbose) {
     amrex::Print() << "Done initializing the level " << level 
@@ -346,11 +360,16 @@ AmrLevelAdv::advance (Real time,
   // max and min of variable 0 are being calculated, and output.
   Real maxval = S_mm.max(0);
   Real minval = S_mm.min(0);
+
   amrex::Print() << "rho max = " << S_mm.max(0) << ", min = " << S_mm.min(0)  << std::endl;
-  amrex::Print() << "mom max = " << S_mm.max(1) << ", min = " << S_mm.min(1)  << std::endl;
+  amrex::Print() << "mom_x max = " << S_mm.max(1) << ", min = " << S_mm.min(1)  << std::endl;
   amrex::Print() << "e max = " << S_mm.max(2) << ", min = " << S_mm.min(2)  << std::endl;
-  amrex::Print() << "v max = " << S_mm.max(3) << ", min = " << S_mm.min(3)  << std::endl;
-  amrex::Print() << "p max = " << S_mm.max(4) << ", min = " << S_mm.min(4)  << std::endl;
+  amrex::Print() << "mom_y max = " << S_mm.max(3) << ", min = " << S_mm.min(3)  << std::endl;
+  amrex::Print() << "ux max = " << S_mm.max(4) << ", min = " << S_mm.min(4)  << std::endl;
+  amrex::Print() << "uy max = " << S_mm.max(5) << ", min = " << S_mm.min(5)  << std::endl;
+  amrex::Print() << "p max = " << S_mm.max(6) << ", min = " << S_mm.min(6)  << std::endl;
+  amrex::Print() << "e max = " << S_mm.max(7) << ", min = " << S_mm.min(7)  << std::endl;
+  
   amrex::Print() << "Time = " << time << std::endl;
   // This ensures that all data computed last time step is moved from
   // `new' data to `old data' - this should not need changing. If more
@@ -462,24 +481,15 @@ AmrLevelAdv::advance (Real time,
 		    for(int i = lo.x; i <= hi.x+iOffset; i++)
 		      {
 			// PW Changes - getting values for HLLC
-			var_array u_i = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE-2);
-			var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, NUM_STATE-2);
-			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
-			var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE-2);
-			double dxval = dx[d];
-			x += dxval;
-			/*
-			  std::cout<<"Indices: "<<i<<" "<<j<<" "<<k<<" "<<NUM_STATE-2<<std::endl;
-			  std::cout<<"lohi: "<<lo.x<<" "<<hi.x<<" "<<hi.x+iOffset<<std::endl;
-			  std::cout<<"u_i: "<<u_i[0]<<" "<<u_i[1]<<" "<<u_i[2]<<std::endl;
-			  std::cout<<"u_iMinus1: "<<u_iMinus1[0]<<" "<<u_iMinus1[1]<<" "<<u_iMinus1[2]<<std::endl;
-			  std::cout<<"u_iPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<std::endl;
-			  std::cout<<"u_iPlus2: "<<u_iPlus2[0]<<" "<<u_iPlus2[1]<<" "<<u_iPlus2[2]<<std::endl;
-			*/
+			var_array u_i = Array4_to_stdArray(arr, i-1, j, k, states_for_update);
+			var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, states_for_update);
+			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, states_for_update);
+			var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, states_for_update);
+
 			// PW Changes - HLLC flux calculation
 			var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
 			// PW Changes - Adding flux calculation into flux array
-			for (int z=0; z<NUM_STATE-2; z++)
+			for (int z=0; z<states_for_update; z++)
 			  {
 			    fluxArr(i,j,k,z) = HLLC_flux[z];
 			  }
@@ -495,17 +505,18 @@ AmrLevelAdv::advance (Real time,
 		    for(int i = lo.x; i <= hi.x; i++)
 		      {
 			// PW Changes - Adding loop to go through variables in arr
-			for (int z=0; z<NUM_STATE-2; z++)
+			for (int z=0; z<states_for_update; z++)
 			  {
 			    // Conservative update formula
-			    // PW Comments -> just need to alter this to add extra variable in 2D
 			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
 			  }
-			var_array con_vals = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
+			var_array con_vals = Array4_to_stdArray(arr, i, j, k, states_for_update);
 			var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
 			//std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
-			arr(i,j,k,3) = arr(i,j,k,1)/arr(i,j,k,0);
-			arr(i,j,k,4) = prim_vals[2];
+			arr(i,j,k,4) = prim_vals[1];
+			arr(i,j,k,5) = prim_vals[3];
+			arr(i,j,k,6) = prim_vals[2];
+			arr(i,j,k,7) = prim_vals[2] / ((gam-1.0)*con_vals[0]);
 		      }
 		  }
 	      }
@@ -536,10 +547,12 @@ AmrLevelAdv::advance (Real time,
 	    fluxes[d].mult(scaleFactor, 0, NUM_STATE);
 	  }
       }
-
+    
     // PW Changes - Adding loop for Y dimension
     else if (d == 1)
       {
+
+	
 	// Loop over all the patches at this level
 	for (MFIter mfi(Sborder, true); mfi.isValid(); ++mfi)
 	  {
@@ -553,35 +566,32 @@ AmrLevelAdv::advance (Real time,
 	    // data array runs from e.g. [0,N] and the flux array from [0,N+1]
 	    const auto& arr = Sborder.array(mfi);
 	    const auto& fluxArr = fluxes[d].array(mfi);
-	    double x=0;
 	    // flux calculation loop
 	    for(int k = lo.z; k <= hi.z+kOffset; k++)
 	      {
 		for(int j = lo.y; j <= hi.y+jOffset; j++)
 		  {
+		    double x=0;
 		    for(int i = lo.x; i <= hi.x+iOffset; i++)
 		      {
 			// PW Changes - getting values for HLLC
-			var_array u_i = Array4_to_stdArray(arr, i-1, j, k, NUM_STATE-2);
-			var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, NUM_STATE-2);
-			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
-			var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, NUM_STATE-2);
-			/*
-			  std::cout<<"Indices: "<<i<<" "<<j<<" "<<k<<" "<<NUM_STATE-2<<std::endl;
-			  std::cout<<"lohi: "<<lo.x<<" "<<hi.x<<" "<<hi.x+iOffset<<std::endl;
-			  std::cout<<"u_i: "<<u_i[0]<<" "<<u_i[1]<<" "<<u_i[2]<<std::endl;
-			  std::cout<<"u_iMinus1: "<<u_iMinus1[0]<<" "<<u_iMinus1[1]<<" "<<u_iMinus1[2]<<std::endl;
-			  std::cout<<"u_iPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<std::endl;
-			  std::cout<<"u_iPlus2: "<<u_iPlus2[0]<<" "<<u_iPlus2[1]<<" "<<u_iPlus2[2]<<std::endl;
-			*/
+			var_array u_i = Array4_to_stdArray(arr, i, j-1, k, states_for_update);
+			var_array u_iMinus1 = Array4_to_stdArray(arr, i, j-2, k, states_for_update);
+			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, states_for_update);
+			var_array u_iPlus2 = Array4_to_stdArray(arr, i, j+1, k, states_for_update);
+			x += dx[d];
+			
+			//std::cout<<x<<" "<<"uPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<" "<<u_iPlus1[3]<<std::endl;
+	    
 			// PW Changes - Y HLLC flux calculation
 			var_array HLLC_flux = HLLC.HLLC_flux_Y(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
+			//std::cout<<"HLLC Flux Y: "<<HLLC_flux[0]<<" "<<HLLC_flux[1]<<" "<<HLLC_flux[2]<<" "<<HLLC_flux[3]<<std::endl;
 			// PW Changes - Adding flux calculation into flux array
-			for (int z=0; z<NUM_STATE-2; z++)
+			for (int z=0; z<states_for_update; z++)
 			  {
 			    fluxArr(i,j,k,z) = HLLC_flux[z];
 			  }
-			//std::cout<<"HLLC flux: "<<HLLC_flux[0]<<" "<<HLLC_flux[1]<<" "<<HLLC_flux[2]<<std::endl;
+			//std::cout<<"HLLC Flux Y: "<<fluxArr(i,j,k,0)<<" "<<fluxArr(i,j,k,1)<<" "<<fluxArr(i,j,k,2)<<" "<<fluxArr(i,j,k,3)<<std::endl;
 		      }
 		  }
 	      }
@@ -593,48 +603,50 @@ AmrLevelAdv::advance (Real time,
 		    for(int i = lo.x; i <= hi.x; i++)
 		      {
 			// PW Changes - Adding loop to go through variables in arr
-			for (int z=0; z<NUM_STATE-2; z++)
+			for (int z=0; z<states_for_update; z++)
 			  {
 			    // Conservative update formula
 			    // PW Comments -> just need to alter this to add extra variable in 2D
 			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
 			  }
-			var_array con_vals = Array4_to_stdArray(arr, i, j, k, NUM_STATE-2);
+			var_array con_vals = Array4_to_stdArray(arr, i, j, k, states_for_update);
 			var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
+			//std::cout<<"Size: "<<con_vals[0]<<" "<<con_vals[1]<<" "<<con_vals[2]<<" "<<con_vals[3]<<std::endl;
 			//std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
-			arr(i,j,k,3) = arr(i,j,k,1)/arr(i,j,k,0);
-			arr(i,j,k,4) = prim_vals[2];
+			arr(i,j,k,4) = prim_vals[1];
+			arr(i,j,k,5) = prim_vals[3];
+			//std::cout<<"Vy: "<<arr(i,j,k,4)<<" "<<fluxArr(i,j,k,4)<<" "<<fluxArr(i+iOffset, j+jOffset, k+kOffset,4)<<std::endl;
+			arr(i,j,k,6) = prim_vals[2];
+			arr(i,j,k,7) = prim_vals[2] / ((gam-1.0)*con_vals[0]);
 		      }
 		  }
 	      }
 	  }
-
-	// We need to compute boundary conditions again after each update
-	Sborder.FillBoundary(geom.periodicity());
-	TransmissiveBoundaryConds(Sborder);
-    
-	// The fluxes now need scaling for the reflux command.
-	// This scaling is by the size of the boundary through which the flux passes, e.g. the x-flux needs scaling by the dy, dz and dt
-	if(do_reflux)
-	  {
-	    Real scaleFactor = dt;
-	    for(int scaledir = 0; scaledir < amrex::SpaceDim; ++scaledir)
-	      {
-		// Fluxes don't need scaling by dx[d]
-		if(scaledir == d)
-		  {
-		    continue;
-		  }
-		scaleFactor *= dx[scaledir];
-	      }
-	    // The mult function automatically multiplies entries in a multifab by a scalar
-	    // scaleFactor: The scalar to multiply by
-	    // 0: The first data index in the multifab to multiply
-	    // NUM_STATE:  The total number of data indices that will be multiplied
-	    fluxes[d].mult(scaleFactor, 0, NUM_STATE);
-	  }
       }
+    // We need to compute boundary conditions again after each update
+    Sborder.FillBoundary(geom.periodicity());
+    TransmissiveBoundaryConds(Sborder);
     
+    // The fluxes now need scaling for the reflux command.
+    // This scaling is by the size of the boundary through which the flux passes, e.g. the x-flux needs scaling by the dy, dz and dt
+    if(do_reflux)
+      {
+	Real scaleFactor = dt;
+	for(int scaledir = 0; scaledir < amrex::SpaceDim; ++scaledir)
+	  {
+	    // Fluxes don't need scaling by dx[d]
+	    if(scaledir == d)
+	      {
+		continue;
+	      }
+	    scaleFactor *= dx[scaledir];
+	  }
+	// The mult function automatically multiplies entries in a multifab by a scalar
+	// scaleFactor: The scalar to multiply by
+	// 0: The first data index in the multifab to multiply
+	// NUM_STATE:  The total number of data indices that will be multiplied
+	fluxes[d].mult(scaleFactor, 0, NUM_STATE);
+      }
   }
   // The updated data is now copied to the S_new multifab.  This means
   // it is now accessible through the get_new_data command, and AMReX
