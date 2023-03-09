@@ -61,8 +61,8 @@ subroutine state_error(tag,tag_lo,tag_hi, &
   ! Tag on regions of high phi gradient
   if (level .lt. max_phigrad_lev) then
      do       k = lo(3), hi(3)
-        do    j = lo(2), hi(2)
-           do i = lo(1), hi(1)
+        do    j = lo(2)+1, hi(2)-1
+           do i = lo(1)+1, hi(1)-1
               ax = abs(state(i-1,j,k)-state(i,j,k))
               ax = max(ax, abs(state(i,j,k)-state(i+1,j,k)))
               ay = abs(state(i,j-1,k)-state(i,j,k))
