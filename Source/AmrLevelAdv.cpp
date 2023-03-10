@@ -232,7 +232,7 @@ AmrLevelAdv::initData ()
 	{
 	  const Real x = probLoX + (double(i)+0.5) * dX;
 
-	  var_array prim_vals = Test.Test1_diag(x, y);
+	  var_array prim_vals = Test.CylindricalExplosion(x, y);
 	  var_array con_vals = euler_EOS.prim_to_con(prim_vals, DIM);
 	  int side=1; // 0 == x aligned, 1==y aligned
 
