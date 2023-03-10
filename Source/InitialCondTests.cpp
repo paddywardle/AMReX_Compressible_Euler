@@ -465,3 +465,34 @@ var_array InitialCondTests::Test5_diag(double x, double y)
   return initial_conds;
 }
 
+var_array InitialCondTests::CylindricalExplosion(double x, double y)
+{
+
+  var_array initial_conds;
+  
+  if (sqrt(pow(x-1,2) + pow(y-1,2))<0.4)
+    {
+      // Density
+      initial_conds[0] = 1.0;
+      // Velocity
+      initial_conds[1] = 0.0;
+      // Pressure
+      initial_conds[2] = 1.0;
+      // Velocity y
+      initial_conds[3] = 0.0;
+    }
+  else
+    {
+      // Density
+      initial_conds[0] = 0.125;
+      // Velocity
+      initial_conds[1] = 0.0;
+      // Pressure
+      initial_conds[2] = 0.1;
+      // Velocity y
+      initial_conds[3] = 0.0;
+    }
+
+  return initial_conds;
+}
+

@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 
 typedef std::array<double,4> var_array;
 
@@ -37,17 +38,7 @@ class InitialCondTests
   var_array Test4_diag(double, double);
 
   var_array Test5_diag(double, double);
-  
-  /*
-  var_array Test2D_1(double);
 
-  var_array Test2D_2(double);
-
-  var_array Test2D_3(double);
-
-  var_array Test2D_4(double);
-
-  var_array Test2D_5(double);
-  */
+  var_array CylindricalExplosion(double, double);
 
 };
