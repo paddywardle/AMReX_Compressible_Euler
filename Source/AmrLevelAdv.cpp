@@ -105,9 +105,54 @@ AmrLevelAdv::writePlotFile (const std::string& dir,
 	 	            std::ostream&      os,
                             VisMF::How         how)
 { 
-  AmrLevel::writePlotFile (dir,os,how);
-}
+  //AmrLevel::writePlotFile (dir,os,how);
 
+  std::ofstream output("Sim100_Test1.dat");
+
+  const Real* dx  = geom.CellSize();
+  // Position of the bottom left corner of the domain
+  const Real* prob_lo = geom.ProbLo();
+  // Create a multifab which can store the initial data
+  MultiFab& S_new = get_new_data(Phi_Type);
+  Real cur_time   = state[Phi_Type].curTime();
+  // Slightly messy way to ensure uninitialised data is not used.
+  // AMReX has an XDim3 object, but a function needs to be written to
+  // convert Real* to XDim3
+  const Real dX = dx[0];
+  const Real dY = (amrex::SpaceDim > 1 ? dx[1] : 0.0);
+  const Real dZ = (amrex::SpaceDim > 2 ? dx[2] : 0.0);
+
+  const Real probLoX = prob_lo[0];
+  const Real probLoY = (amrex::SpaceDim > 1 ? prob_lo[1] : 0.0);
+  const Real probLoZ = (amrex::SpaceDim > 2 ? prob_lo[2] : 0.0);
+  
+  // Loop over all the patches at this level
+  for (MFIter mfi(S_new, true); mfi.isValid(); ++mfi)
+  {
+    Box bx = mfi.tilebox();
+    const Dim3 lo = lbound(bx);
+    const Dim3 hi = ubound(bx);
+
+    const auto& arr = S_new.array(mfi);
+
+    for(int k = lo.z; k <= hi.z; k++)
+    {
+      const Real z = probLoZ + (double(k)+0.5) * dZ;
+      for(int j = lo.y; j <= hi.y; j++)
+      {
+	const Real y = probLoY + (double(j)+0.5) * dY;
+	for(int i = lo.x; i <= hi.x; i++)
+	{
+	  const Real x = probLoX + (double(i)+0.5) * dX;
+	  std::cout<<i<<" "<<x<<" "<<dX<<std::endl;
+
+	  output<<x<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,4)<<" "<<arr(i,j,k,6)<<" "<<arr(i,j,k,7)<<std::endl;
+	  
+	}
+      }
+    }
+  }
+}
 //
 //Define data descriptors.
 //
@@ -232,7 +277,7 @@ AmrLevelAdv::initData ()
 	{
 	  const Real x = probLoX + (double(i)+0.5) * dX;
 
-	  var_array prim_vals = Test.CylindricalExplosion(x, y);
+	  var_array prim_vals = Test.Test1D_1(x);
 	  var_array con_vals = euler_EOS.prim_to_con(prim_vals, DIM);
 	  int side=1; // 0 == x aligned, 1==y aligned
 
@@ -244,19 +289,6 @@ AmrLevelAdv::initData ()
 	  arr(i, j, k, 5) = prim_vals[3]; // velocity y
 	  arr(i, j, k, 6) = prim_vals[2]; // pressure
 	  arr(i, j, k, 7) = prim_vals[2] / ((gam - 1.0)*con_vals[0]);
-	  /*
-	  else if (side == 1)
-	    {
-	      arr(i, j, k, 0) = con_vals[0]; // density
-	      arr(i, j, k, 1) = con_vals[3]; // momentum x
-	      arr(i, j, k, 2) = con_vals[2]; // energy
-	      arr(i, j, k, 3) = con_vals[1]; // momentum y
-	      arr(i, j, k, 4) = prim_vals[3]; // velocity x
-	      arr(i, j, k, 5) = prim_vals[1]; // velocity y
-	      arr(i, j, k, 6) = prim_vals[2]; // pressure
-	      arr(i, j, k, 7) = prim_vals[2] / ((gam - 1.0)*con_vals[0]);
-	    }
-	  */
 	}
       }
     }
