@@ -6,5 +6,5 @@ int main()
 
   E.run();
 
-  E.outputFile("RiemannExactResults/Test3/Test3_100cells.dat");
+  E.outputFile("RiemannExactResults/Test1/Test1_100cells.dat");
 }

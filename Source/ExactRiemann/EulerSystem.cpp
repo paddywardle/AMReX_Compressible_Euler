@@ -8,9 +8,9 @@ void EulerSystem::initial_conds()
   InitialCondTests Tests;
   for (int i=0; i<u.rows(); i++)
     {
-      double x = x0 + i * dx;
+      double x = x0 + (double(i) + 0.5) * dx;
 
-      var_array current = Tests.Test1D_3(x);
+      var_array current = Tests.Test1D_1(x);
 
       u_prim(i,0) = current[0];
       u_prim(i,1) = current[1];
@@ -29,9 +29,9 @@ void EulerSystem::outputFile(std::string outputName)
 {
   std::ofstream output(outputName);
 
-  for (int i=1; i<u.rows()-2; i++)
+  for (int i=1; i<u.rows()-3; i++)
     {
-      double x = x0 + (i-1) * dx;
+      double x = x0 + (double(i-1)+0.5) * dx;
       output<<x<<" ";
       for (int j=0; j<u.cols(); j++)
 	{
