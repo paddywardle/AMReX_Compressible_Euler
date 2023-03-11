@@ -90,7 +90,7 @@ Eigen::ArrayXXf NumericalMethod::rightRar(double p_star, double v_star, double p
     }
   else
     {
-      double c_starR = cs(0) * pow((p_star/uR_prim(2)), (gam - 1.0)/(2.0*gam));
+      double c_starR = cs(1) * pow((p_star/uR_prim(2)), (gam - 1.0)/(2.0*gam));
       double st_right = v_star + c_starR;
 
       if (pos <= st_right)
@@ -157,19 +157,19 @@ Eigen::ArrayXXf NumericalMethod::SamplePattern(double p_star, double v_star, dou
 
       else
 	{
-	  u = leftShock( p_star,  v_star, pos, uL_prim, uR_prim, cs);
+	  u = leftShock(p_star, v_star, pos, uL_prim, uR_prim, cs);
 	}
     }
   else
     {
       if (p_star <= uR_prim(2))
 	{
-	  u = rightRar( p_star,  v_star,  pos, uL_prim, uR_prim, cs);
+	  u = rightRar(p_star, v_star, pos, uL_prim, uR_prim, cs);
 	}
 
       else
 	{
-	  u = rightShock( p_star,  v_star,  pos, uL_prim, uR_prim, cs);
+	  u = rightShock(p_star, v_star, pos, uL_prim, uR_prim, cs);
 	} 
     }
 
@@ -186,14 +186,14 @@ double NumericalMethod::PressureApprox(Eigen::ArrayXXf uL_prim, Eigen::ArrayXXf 
   double cs_left = sqrt(gam*uL_prim(2)/uL_prim(0));
   double cs_right = sqrt(gam*uR_prim(2)/uR_prim(0));
 
-  double rho_int = 0.25 * (uL_prim(0) + uR_prim(0)) * (cs_left * cs_right);
+  double rho_int = 0.25 * (uL_prim(0) + uR_prim(0)) * (cs_left + cs_right);
   double ppv = 0.5 * (uL_prim(2) + uR_prim(2)) + 0.5 * (uL_prim(1) - uR_prim(1))*rho_int;
   ppv = std::max(0.0, ppv);
   double minp = std::min(uL_prim(2), uR_prim(2));
   double maxp = std::max(uL_prim(2), uR_prim(2));
   double qmax = maxp/minp;
 
-  if ((qmax <= Quser) && (minp <= ppv) && (maxp >= ppv))
+  if ((qmax <= Quser) && (minp <= ppv &&  ppv <= maxp))
     {
       p_g = ppv;
     }
@@ -247,7 +247,7 @@ std::array<double,2> NumericalMethod::PressureFlux(double p_prev, Eigen::ArrayXX
   else
     {
       pK_flux[0] = ((2.0 * csK) / (gam - 1.0)) * (pow((p_prev/uK(2)), ((gam-1.0)/(2.0*gam))) - 1.0);
-      pK_flux[1] = (1.0/(uK(0) * csK)) * pow(p_prev/uK(2),-(gam+1.0)/(2.0*gam)); 
+      pK_flux[1] = (1.0/(uK(0) * csK)) * pow((p_prev/uK(2)),-(gam+1.0)/(2.0*gam)); 
     }
 
   return pK_flux;
@@ -260,19 +260,22 @@ std::array<double,2> NumericalMethod::NewtonRaphson(double pressure, Eigen::Arra
   double p_new = pressure;
   double pLflux;
   double pRflux;
-  double csL = cs(0, 0);
-  double csR = cs(0, 1);
+  double csL = cs(0);
+  double csR = cs(1);
+  double current_tol;
+  
   do
     {
       std::array<double,2> pL_flux = PressureFlux(p_prev, uL_prim, csL);
       std::array<double,2> pR_flux = PressureFlux(p_prev, uR_prim, csR);
-      p_new = p_prev - ((pL_flux[0] + pR_flux[0] + (uL_prim(1) - uR_prim(1))) / (pL_flux[1] + pR_flux[1]));
+      p_new = p_prev - ((pL_flux[0] + pR_flux[0] + (uR_prim(1) - uL_prim(1))) / (pL_flux[1] + pR_flux[1]));
+      current_tol = (2.0 * fabs((p_new - p_prev)/(p_new + p_prev)));
       p_prev = p_new;
-      pLflux = pL_flux[1];
-      pRflux = pR_flux[1];
-    } while ((2.0 * fabs((p_new - p_prev)/(p_new + p_prev))) > 1e-9);
+      pLflux = pL_flux[0];
+      pRflux = pR_flux[0];
+    } while (current_tol > 1e-9);
 
-  double v_star = 0.5 * (uL_prim(0) + uR_prim(0) + pRflux - pLflux);
+  double v_star = 0.5 * (uL_prim(1) + uR_prim(1) + pRflux - pLflux);
 
   std::array<double,2> star_vals;
   star_vals[0] = p_new;

@@ -10,7 +10,7 @@ void EulerSystem::initial_conds()
     {
       double x = x0 + i * dx;
 
-      var_array current = Tests.Test1D_1(x);
+      var_array current = Tests.Test1D_3(x);
 
       u_prim(i,0) = current[0];
       u_prim(i,1) = current[1];
@@ -20,7 +20,7 @@ void EulerSystem::initial_conds()
 
 void EulerSystem::resize_matrix()
 {
-  u.resize(nCells+4, 3);
+  u.resize(nCells+4, 4);
   uPlus1.resize(nCells+4, 3);
   u_prim.resize(nCells+4, 3);
 }
@@ -51,7 +51,7 @@ void EulerSystem::Solver1D()
   NumericalMethod NumM(gamma, nCells);
 
   Eigen::ArrayXXf uL_prim = u_prim.row(0);
-  Eigen::ArrayXXf uR_prim = u_prim.row(nCells);
+  Eigen::ArrayXXf uR_prim = u_prim.row(nCells+1);
   Eigen::ArrayXXf cs = NumM.SoundSpeed(uL_prim, uR_prim);
   double pressure = NumM.PressureApprox(uL_prim, uR_prim);
   std::array<double,2> star_vals = NumM.NewtonRaphson(pressure, uL_prim, uR_prim, cs);
@@ -59,11 +59,19 @@ void EulerSystem::Solver1D()
   double v_star = star_vals[1];
   double x_val=0;
 
-  for (int i=0; i<nCells+1; i++)
+  Eigen::ArrayXXf u_current;
+
+  std::cout<<p_star<<" "<<v_star<<" "<<cs(0)<<" "<<cs(1)<<" "<<pressure<<std::endl;
+
+  for (int i=0; i<nCells+2; i++)
     {
       x_val += dx;
       double pos = (x_val - 0.5) / t;
-      u.row(i) = NumM.SamplePattern(p_star, v_star, pos, u_prim.row(i), u_prim.row(i+1), cs);
+      u_current = NumM.SamplePattern(p_star, v_star, pos, uL_prim, uR_prim, cs);
+      u(i,0) = u_current(0);
+      u(i,1) = u_current(1);
+      u(i,2) = u_current(2);
+      u(i,3) = u_current(2) / ((gamma-1.0)*u_current(0));
     }
 }
 
