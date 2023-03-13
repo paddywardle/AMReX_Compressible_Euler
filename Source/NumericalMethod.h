@@ -12,11 +12,17 @@ public:
 
   double reconstruction_uR(double, double, double, Limiters);
 
-  var_array HLLC_flux(var_array, var_array, var_array, var_array, double, double);
+  var_array HLLC_flux(var_array, var_array, var_array, var_array, double, double, int);
 
-  var_array uL_half_update(var_array, var_array, double, double);
+  var_array HLLC_flux_Y(var_array, var_array, var_array, var_array, double, double, int);  
 
-  var_array uR_half_update(var_array, var_array, double, double);
+  var_array uL_half_update(var_array, var_array, double, double, int);
+
+  var_array uR_half_update(var_array, var_array, double, double, int);
+
+  var_array uL_half_updateY(var_array, var_array, double, double, int);
+
+  var_array uR_half_updateY(var_array, var_array, double, double, int);
 
 private:
 
@@ -43,6 +49,8 @@ private:
   var_array wavespeed_y(var_array, var_array, var_array, var_array);
   
   var_array uHLLC(var_array, var_array, double, double);
+
+  var_array uHLLC_Y(var_array, var_array, double, double);
 
   var_array fHLLC(var_array, var_array, var_array, var_array, var_array, var_array, double, double, double);
  
