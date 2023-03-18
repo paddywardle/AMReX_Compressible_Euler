@@ -1,7 +1,8 @@
 import numpy as np
 
 def ReadFile(filename):
-     
+    
+    # read files
     data = []
     with open(filename) as f:
         for line in f.readlines():
@@ -12,7 +13,8 @@ def ReadFile(filename):
     return np.asarray(data)
 
 def WriteData(TestNum, results):
-
+    
+    # write output data
     OutputFile = f"../RiemannExactResults/{TestNum}/ConvData/{TestNum}_results.txt"
 
     with open(OutputFile, "w") as f:
@@ -26,11 +28,13 @@ def ConvAnalysis(TestNum):
 
     results = [["Version", "Norm", "Density", "Velocity", "Pressure", "Specific Internal Energy"]]
 
+    # read in data
     ExactFilename = f"../RiemannExactResults/{TestNum}/{TestNum}"
     NoAMRFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_NoAMR"
     AMRFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_AMR"
     NumCells = ["100cells", "200cells", "400cells"]
 
+    # loop and calculate norms for different resolutions
     for cells in NumCells:
 
         ExactData = ReadFile(ExactFilename+"_"+cells+".dat")
