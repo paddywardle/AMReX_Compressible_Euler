@@ -5,47 +5,33 @@ EulerEOS::EulerEOS(double gamma)
 
 var_array EulerEOS::prim_to_con(var_array u_p, int dim)
 {
+  // convert primitive variables to conservative
   var_array u_c;
-
+  
   u_c[0] = u_p[0];
   u_c[1] = u_p[0] * u_p[1];
+  u_c[2] = u_p[2] / (gamma - 1.0) + 0.5 * u_p[0] * (pow(u_p[1], 2.0) + pow(u_p[3], 2.0));
   u_c[3] = u_p[0] * u_p[3];
-
-  if (dim == 2)
-    {
-      u_c[2] = u_p[2] / (gamma - 1.0) + 0.5 * u_p[0] * (pow(u_p[1], 2.0) + pow(u_p[3], 2.0));
-    }
-  else if (dim == 1)
-    {
-      u_c[2] = u_p[2] / (gamma - 1.0) + 0.5 * u_p[0] * pow(u_p[1], 2.0);
-    }
 
   return u_c;
 }
 
 var_array EulerEOS::con_to_prim(var_array u_c, int dim)
 {
+  // convert conservative variables to primitive
   var_array u_p;
 
   u_p[0] = u_c[0];
   u_p[1] = u_c[1] / u_c[0];
+  u_p[2] = (u_c[2] - 0.5 * u_c[0] * (pow(u_p[1], 2.0) + pow(u_p[3], 2.0))) * (gamma - 1.0);
   u_p[3] = u_c[3] / u_c[0];
-  
-  if (dim == 2)
-    {
-      u_p[2] = (u_c[2] - 0.5 * u_c[0] * (pow(u_p[1], 2.0) + pow(u_p[3], 2.0))) * (gamma - 1.0);
-    }
-  else if (dim == 1)
-    {
-      u_p[2] = (u_c[2] - 0.5 * u_c[0] * pow(u_p[1], 2.0)) * (gamma - 1.0);
-    }   
   
   return u_p;
 }
   
 var_array EulerEOS::Euler_flux_fn(var_array f, var_array f_prim)
 {
-  
+  // calculate Euler flux in x direction
   var_array flux_fn;
   double rho = f[0];
   double energy = f[2];
@@ -64,7 +50,7 @@ var_array EulerEOS::Euler_flux_fn(var_array f, var_array f_prim)
 
 var_array EulerEOS::Euler_flux_fn_Y(var_array f, var_array f_prim)
 {
-  
+  // calculate flux in the y direction
   var_array flux_fn;
   double rho = f[0];
   double energy = f[2];
