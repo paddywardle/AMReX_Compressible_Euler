@@ -10,8 +10,10 @@ var_array NumericalMethod::wavespeed_x(var_array uL, var_array uR, var_array uL_
   double csL = sqrt((gamma*uL_prim[2])/uL[0]);
   double csR = sqrt((gamma*uR_prim[2])/uR[0]);
 
-  // This wave speed estimate is recommended by Toro
-  double Splus = std::max(fabs(uL_prim[1])+csL, fabs(uR_prim[1]+csR));
+  double uL_vel = sqrt(pow(uL_prim[1],2.0) + pow(uL_prim[3], 2.0));
+  double uR_vel = sqrt(pow(uR_prim[1],2.0) + pow(uR_prim[3], 2.0));
+
+  double Splus = std::max(fabs(uL_vel)+csL, fabs(uR_vel)+csR);
   wavespeeds[0] = -Splus;
   wavespeeds[1] = +Splus;
   wavespeeds[2] = (uR_prim[2] - uL_prim[2] + uL[0]*uL_prim[1]*(wavespeeds[0] - uL_prim[1]) - uR[0]*uR_prim[1]*(wavespeeds[1] - uR_prim[1])) / (uL[0]*(wavespeeds[0] - uL_prim[1]) - uR[0]*(wavespeeds[1] - uR_prim[1]));
@@ -28,7 +30,10 @@ var_array NumericalMethod::wavespeed_y(var_array uL, var_array uR, var_array uL_
   double csL = sqrt((gamma*uL_prim[2])/uL[0]);
   double csR = sqrt((gamma*uR_prim[2])/uR[0]);
 
-  double Splus = std::max(fabs(uL_prim[3])+csL, fabs(uR_prim[3]+csR));
+  double uL_vel = sqrt(pow(uL_prim[1],2.0) + pow(uL_prim[3], 2.0));
+  double uR_vel = sqrt(pow(uR_prim[1],2.0) + pow(uR_prim[3], 2.0));
+
+  double Splus = std::max(fabs(uL_vel)+csL, fabs(uR_vel)+csR);
   wavespeeds[0] = -Splus;
   wavespeeds[1] = +Splus;
   wavespeeds[2] = (uR_prim[2] - uL_prim[2] + uL[0]*uL_prim[3]*(wavespeeds[0] - uL_prim[3]) - uR[0]*uR_prim[3]*(wavespeeds[1] - uR_prim[3])) / (uL[0]*(wavespeeds[0] - uL_prim[3]) - uR[0]*(wavespeeds[1] - uR_prim[3]));
@@ -187,19 +192,19 @@ var_array NumericalMethod::fHLLC(var_array uL, var_array uR, var_array uLHLLC, v
   for (int i=0; i<fHLLC.size(); i++)
     {
   
-      if (SL >= 0)
+      if (SL >= 0.0)
 	{
 	  fHLLC[i] = fL[i];
 	}
-      else if (SL < 0 && S_star >= 0)
+      else if (SL <= 0.0 && S_star >= 0.0)
 	{
 	  fHLLC[i] = fL[i] + SL*(uLHLLC[i] - uL[i]);
 	}
-      else if (S_star < 0 && SR >= 0)
+      else if (S_star <= 0.0 && SR >= 0.0)
 	{
 	  fHLLC[i] = fR[i] + SR*(uRHLLC[i] - uR[i]);
 	}
-      else
+      else if (SR <= 0.0)
 	{
 	  fHLLC[i] = fR[i];
 	}
@@ -245,7 +250,6 @@ var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_arr
 
   var_array uL, uR, uLPlus1, uRPlus1;
 
-  //std::cout<<"dx: "<<dx<<", dt: "<<dt<<std::endl;
   for (int i=0; i<uL.size(); i++)
     {
       uL[i] = reconstruction_uL(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
@@ -277,8 +281,6 @@ var_array NumericalMethod::HLLC_flux(var_array u_i, var_array u_iMinus1, var_arr
   var_array wavespeeds = wavespeed_x(uRhalf, uLhalfPlus1, uRhalf_prim, uLhalfPlus1_prim); // watch out <- am I doing the correct variables here - check what is being fed from AMReX
 
   double SL=wavespeeds[0], SR=wavespeeds[1], S_star=wavespeeds[2];
-
-  //std::cout<<"Speeds: "<<SL<<" "<<SR<<" "<<S_star<<std::endl;
   
   var_array uLHLLC = uHLLC(uRhalf, uRhalf_prim, SL, S_star);
   var_array uRHLLC = uHLLC(uLhalfPlus1, uLhalfPlus1_prim, SR, S_star);
@@ -324,7 +326,6 @@ var_array NumericalMethod::HLLC_flux_Y(var_array u_i, var_array u_iMinus1, var_a
 
   var_array uL, uR, uLPlus1, uRPlus1;
 
-  //std::cout<<"dx: "<<dx<<", dt: "<<dt<<std::endl;
   for (int i=0; i<uL.size(); i++)
     {
       uL[i] = reconstruction_uL(u_i[i], u_iPlus1[i], u_iMinus1[i], Limiters::Minbee);
@@ -344,11 +345,10 @@ var_array NumericalMethod::HLLC_flux_Y(var_array u_i, var_array u_iMinus1, var_a
 
   var_array uLhalfPlus1_prim = eos.con_to_prim(uLhalfPlus1, dim);
   var_array uRhalfPlus1_prim = eos.con_to_prim(uRhalfPlus1, dim);
-  //std::cout<<"uR: "<<uRhalf[0]<<" "<<uRhalf[1]<<" "<<uRhalf[2]<<" "<<uRhalf[3]<<std::endl;
-  //std::cout<<"uRPrim: "<<uRhalf_prim[0]<<" "<<uRhalf_prim[1]<<" "<<uRhalf_prim[2]<<" "<<uRhalf_prim[3]<<std::endl;
+
   var_array uRflux = eos.Euler_flux_fn_Y(uRhalf, uRhalf_prim);
   var_array uLflux = eos.Euler_flux_fn_Y(uLhalf, uLhalf_prim);
-  //std::cout<<"uRflux: "<<uRflux[0]<<" "<<uRflux[1]<<" "<<uRflux[2]<<" "<<uRflux[3]<<std::endl;
+
   var_array uRPlus1flux = eos.Euler_flux_fn_Y(uRhalfPlus1, uRhalfPlus1_prim);
   var_array uLPlus1flux = eos.Euler_flux_fn_Y(uLhalfPlus1, uLhalfPlus1_prim);
 
@@ -357,8 +357,6 @@ var_array NumericalMethod::HLLC_flux_Y(var_array u_i, var_array u_iMinus1, var_a
   var_array wavespeeds = wavespeed_y(uRhalf, uLhalfPlus1, uRhalf_prim, uLhalfPlus1_prim); // watch out <- am I doing the correct variables here - check what is being fed from AMReX
 
   double SL=wavespeeds[0], SR=wavespeeds[1], S_star=wavespeeds[2];
-
-  //std::cout<<"Speeds: "<<SL<<" "<<SR<<" "<<S_star<<std::endl;
   
   var_array uLHLLC = uHLLC_Y(uRhalf, uRhalf_prim, SL, S_star);
   var_array uRHLLC = uHLLC_Y(uLhalfPlus1, uLhalfPlus1_prim, SR, S_star);
