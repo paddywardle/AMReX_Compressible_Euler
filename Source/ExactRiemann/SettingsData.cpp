@@ -8,7 +8,8 @@ SettingsData::SettingsData()
 void SettingsData::readSettings()
 {
   try {
-    
+
+    // using libconfig to parse through setting files to get settings
     libconfig::Config cfg;
     cfg.readFile("SettingsFile.txt");
     const auto& cfd_selection = cfg.lookup("CFD");
