@@ -2,7 +2,7 @@
 
 var_array InitialCondTests::Test1D_1(double x)
 {
-
+  // Toro test 1 - x aligned discontinuity
   var_array initial_conds;
   
   if (x < 0.5)
@@ -33,7 +33,7 @@ var_array InitialCondTests::Test1D_1(double x)
 
 var_array InitialCondTests::Test1D_2(double x)
 {
-
+  // Toro test 2 - x aligned discontinuity
   var_array initial_conds;
   
   if (x < 0.5)
@@ -64,7 +64,7 @@ var_array InitialCondTests::Test1D_2(double x)
 
 var_array InitialCondTests::Test1D_3(double x)
 {
-
+  // Toro test 3 - x aligned discontinuity
   var_array initial_conds;
   
   if (x < 0.5)
@@ -95,7 +95,7 @@ var_array InitialCondTests::Test1D_3(double x)
 
 var_array InitialCondTests::Test1D_4(double x)
 {
-
+  // Toro test 4 - x aligned discontinuity
   var_array initial_conds;
   
   if (x < 0.5)
@@ -126,7 +126,7 @@ var_array InitialCondTests::Test1D_4(double x)
 
 var_array InitialCondTests::Test1D_5(double x)
 {
-
+  // Toro test 5 - x aligned discontinuity
   var_array initial_conds;
   
   if (x < 0.5)
@@ -157,7 +157,7 @@ var_array InitialCondTests::Test1D_5(double x)
 
 var_array InitialCondTests::Test1D_1Y(double y)
 {
-
+  // Toro test 1 - y aligned discontinuity
   var_array initial_conds;
   
   if (y < 0.5)
@@ -188,7 +188,7 @@ var_array InitialCondTests::Test1D_1Y(double y)
 
 var_array InitialCondTests::Test1D_2Y(double y)
 {
-
+  // Toro test 2 - y aligned discontinuity
   var_array initial_conds;
   
   if (y < 0.5)
@@ -219,7 +219,7 @@ var_array InitialCondTests::Test1D_2Y(double y)
 
 var_array InitialCondTests::Test1D_3Y(double y)
 {
-
+  // Toro test 3 - y aligned discontinuity
   var_array initial_conds;
   
   if (y < 0.5)
@@ -250,7 +250,7 @@ var_array InitialCondTests::Test1D_3Y(double y)
 
 var_array InitialCondTests::Test1D_4Y(double y)
 {
-
+  // Toro test 4 - y aligned discontinuity
   var_array initial_conds;
   
   if (y < 0.5)
@@ -281,7 +281,7 @@ var_array InitialCondTests::Test1D_4Y(double y)
 
 var_array InitialCondTests::Test1D_5Y(double y)
 {
-
+  // Toro test 5 - y aligned discontinuity
   var_array initial_conds;
   
   if (y < 0.5)
@@ -312,7 +312,7 @@ var_array InitialCondTests::Test1D_5Y(double y)
 
 var_array InitialCondTests::Test1_diag(double x, double y)
 {
-
+  // Toro test 1 - diagonally aligned discontinuity at x=y
   var_array initial_conds;
   
   if (x > y)
@@ -343,7 +343,7 @@ var_array InitialCondTests::Test1_diag(double x, double y)
 
 var_array InitialCondTests::Test2_diag(double x, double y)
 {
-
+  // Toro test 2 - diagonally aligned discontinuity at x=y
   var_array initial_conds;
   
   if (x > y)
@@ -375,7 +375,7 @@ var_array InitialCondTests::Test2_diag(double x, double y)
 
 var_array InitialCondTests::Test3_diag(double x, double y)
 {
-
+  // Toro test 3 - diagonally aligned discontinuity at x=y
   var_array initial_conds;
   
   if (x > y)
@@ -406,7 +406,7 @@ var_array InitialCondTests::Test3_diag(double x, double y)
 
 var_array InitialCondTests::Test4_diag(double x, double y)
 {
-
+  // Toro test 4 - diagonally aligned discontinuity at x=y
   var_array initial_conds;
   
   if (x > y)
@@ -437,7 +437,7 @@ var_array InitialCondTests::Test4_diag(double x, double y)
 
 var_array InitialCondTests::Test5_diag(double x, double y)
 {
-
+  // Toro test 5 - diagonally aligned discontinuity at x=y
   var_array initial_conds;
   
   if (x > y)
@@ -468,7 +468,7 @@ var_array InitialCondTests::Test5_diag(double x, double y)
 
 var_array InitialCondTests::CylindricalExplosion(double x, double y)
 {
-
+  // cylindrical explosion test
   var_array initial_conds;
   
   if (sqrt(pow(x-1,2) + pow(y-1,2))<0.4)
