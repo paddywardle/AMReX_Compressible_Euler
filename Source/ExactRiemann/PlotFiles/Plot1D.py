@@ -14,20 +14,20 @@ def ReadFile(filename):
 
 def Plot1D(TestNum, col):
 
-    ExactFilename = f"RiemannExactResults/{TestNum}/{TestNum}_400cells.dat"
-    NoAMRFilename = f"RiemannExactResults/{TestNum}/{TestNum}_NoAMR"
+    ExactFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_400cells.dat"
+    NoAMRFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_NoAMR"
 
     ExactData = ReadFile(ExactFilename)
     NoAMR100 = ReadFile(NoAMRFilename + "_100cells.dat")
     NoAMR200 = ReadFile(NoAMRFilename + "_200cells.dat")
     NoAMR400 = ReadFile(NoAMRFilename + "_400cells.dat")
 
-    fig, ax = plt.subplots(figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(13,8))
     
-    ax.plot(ExactData[:,0], ExactData[:,col], "k", label="Exact")
     ax.scatter(NoAMR100[:,0], NoAMR100[:,col], c="b", marker="x", label="100 cells")
     ax.scatter(NoAMR200[:,0], NoAMR200[:,col], c="c", marker="+", label="200 cells")
     ax.scatter(NoAMR400[:,0], NoAMR400[:,col], facecolors='none', edgecolors='r', label="400 cells")
+    ax.plot(ExactData[:,0], ExactData[:,col], "k", label="Exact")
     ax.legend()
     ax.set_xlabel("X-Domain")
 
@@ -44,65 +44,67 @@ def Plot1D(TestNum, col):
 
     if col == 1:
         ax.set_ylabel("Density")
-        plt.savefig(f"RiemannExactResults/{TestNum}/plots/{TestNum}_density.png")
+        plt.savefig(f"../RiemannExactResults/{TestNum}/plots/{TestNum}_density.png")
     elif col == 2:
         ax.set_ylabel("Velocity")
-        plt.savefig(f"RiemannExactResults/{TestNum}/plots/{TestNum}_velocity.png")
+        plt.savefig(f"../RiemannExactResults/{TestNum}/plots/{TestNum}_velocity.png")
     elif col == 3:
         ax.set_ylabel("Pressure")
-        plt.savefig(f"RiemannExactResults/{TestNum}/plots/{TestNum}_pressure.png")
+        plt.savefig(f"../RiemannExactResults/{TestNum}/plots/{TestNum}_pressure.png")
     elif col == 4:
         ax.set_ylabel("Specific Internal Energy")
-        plt.savefig(f"RiemannExactResults/{TestNum}/plots/{TestNum}_internal_energy.png")
+        plt.savefig(f"../RiemannExactResults/{TestNum}/plots/{TestNum}_internal_energy.png")
 
     plt.close()
 
 def Subplot1D(TestNum):
 
-    ExactFilename = f"RiemannExactResults/{TestNum}/{TestNum}_400cells.dat"
-    NoAMRFilename = f"RiemannExactResults/{TestNum}/{TestNum}_NoAMR"
+    ExactFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_400cells.dat"
+    NoAMRFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_NoAMR"
 
     ExactData = ReadFile(ExactFilename)
     NoAMR100 = ReadFile(NoAMRFilename + "_100cells.dat")
     NoAMR200 = ReadFile(NoAMRFilename + "_200cells.dat")
     NoAMR400 = ReadFile(NoAMRFilename + "_400cells.dat")
 
-    fig, ax = plt.subplots(2, 2, figsize=(15,15))
+    fig, ax = plt.subplots(2, 2, figsize=(13,11))
     
-    ax[0,0].plot(ExactData[:,0], ExactData[:,1], "k", label="Exact")
     ax[0,0].scatter(NoAMR100[:,0], NoAMR100[:,1], c="b", marker="x", label="100 cells")
     ax[0,0].scatter(NoAMR200[:,0], NoAMR200[:,1], c="c", marker="+", label="200 cells")
     ax[0,0].scatter(NoAMR400[:,0], NoAMR400[:,1], facecolors='none', edgecolors='r', label="400 cells")
-    ax[0,0].legend()
+    ax[0,0].plot(ExactData[:,0], ExactData[:,1], "k", label="Exact")
+    ax[0,0].legend(borderpad=2, fontsize="large")
     ax[0,0].set_xlabel("X-Domain")
     ax[0,0].set_ylabel("Density")
 
-    ax[0,1].plot(ExactData[:,0], ExactData[:,2], "k", label="Exact")
     ax[0,1].scatter(NoAMR100[:,0], NoAMR100[:,2], c="b", marker="x", label="100 cells")
     ax[0,1].scatter(NoAMR200[:,0], NoAMR200[:,2], c="c", marker="+", label="200 cells")
     ax[0,1].scatter(NoAMR400[:,0], NoAMR400[:,2], facecolors='none', edgecolors='r', label="400 cells")
-    ax[0,1].legend()
+    ax[0,1].plot(ExactData[:,0], ExactData[:,2], "k", label="Exact")
+    ax[0,1].legend(borderpad=2, fontsize="large")
     ax[0,1].set_xlabel("X-Domain")
     ax[0,1].set_ylabel("Velocity")
 
-    ax[1,0].plot(ExactData[:,0], ExactData[:,3], "k", label="Exact")
     ax[1,0].scatter(NoAMR100[:,0], NoAMR100[:,3], c="b", marker="x", label="100 cells")
     ax[1,0].scatter(NoAMR200[:,0], NoAMR200[:,3], c="c", marker="+", label="200 cells")
     ax[1,0].scatter(NoAMR400[:,0], NoAMR400[:,3], facecolors='none', edgecolors='r', label="400 cells")
-    ax[1,0].legend()
+    ax[1,0].plot(ExactData[:,0], ExactData[:,3], "k", label="Exact")
+    ax[1,0].legend(borderpad=2, fontsize="large")
     ax[1,0].set_xlabel("X-Domain")
     ax[1,0].set_ylabel("Pressure")
 
-    ax[1,1].plot(ExactData[:,0], ExactData[:,4], "k", label="Exact")
     ax[1,1].scatter(NoAMR100[:,0], NoAMR100[:,4], c="b", marker="x", label="100 cells")
     ax[1,1].scatter(NoAMR200[:,0], NoAMR200[:,4], c="c", marker="+", label="200 cells")
     ax[1,1].scatter(NoAMR400[:,0], NoAMR400[:,4], facecolors='none', edgecolors='r', label="400 cells")
-    ax[1,1].legend()
+    ax[1,1].plot(ExactData[:,0], ExactData[:,4], "k", label="Exact")
+    ax[1,1].legend(borderpad=2, fontsize="large")
     ax[1,1].set_xlabel("X-Domain")
     ax[1,1].set_ylabel("Pressure")
     ax[1,1].set_ylabel("Specific Internal Energy")
+
+    plt.tight_layout()
     
-    plt.savefig(f"RiemannExactResults/{TestNum}/plots/{TestNum}_subplots.png")
+    plt.savefig(f"../RiemannExactResults/{TestNum}/plots/{TestNum}_subplots.png")
 
     plt.close()
 
