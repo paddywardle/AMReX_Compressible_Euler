@@ -13,15 +13,15 @@ int      AmrLevelAdv::verbose         = 0;
 Real     AmrLevelAdv::cfl             = 0.9; // Default value - can be overwritten in settings file
 int      AmrLevelAdv::do_reflux       = 1;  
 
-// PW COMMENTS: Alter these based on simulation dimensions
+// 2023U9 COMMENTS: Alter these based on simulation dimensions
 int      AmrLevelAdv::NUM_STATE       = 8;  // Three variable in the state
 int      AmrLevelAdv::NUM_GROW        = 2;  // number of ghost cells
 
-double gam=1.4; // PW Changes - gam value for simulation
-int DIM = 2; // PW Changes - Setting DIMs for simulation
-InitialCondTests Test; // PW Changes - Object containing initial conditions
-EulerEOS euler_EOS(gam); // PW Changes - Object for EulerEOS methods
-NumericalMethod HLLC(gam); // PW Changes - Adding Numerical Method class
+double gam=1.4; // 2023U9 Changes - gam value for simulation
+int DIM = 2; // 2023U9 Changes - Setting DIMs for simulation
+InitialCondTests Test; // 2023U9 Changes - Object containing initial conditions
+EulerEOS euler_EOS(gam); // 2023U9 Changes - Object for EulerEOS methods
+NumericalMethod HLLC(gam); // 2023U9 Changes - Adding Numerical Method class
 int states_for_update = 4; 
 
 //
@@ -99,15 +99,16 @@ AmrLevelAdv::checkPoint (const std::string& dir,
 //Write a plotfile to specified directory - format is handled automatically by AMReX.
 //
 
-// PW COMMENTS -> lots of changes here to output the data
+// 2023U9 COMMENTS -> lots of changes here to output the data
 void
 AmrLevelAdv::writePlotFile (const std::string& dir,
 	 	            std::ostream&      os,
                             VisMF::How         how)
 { 
-  //AmrLevel::writePlotFile (dir,os,how);
+  AmrLevel::writePlotFile (dir,os,how);
 
-  std::ofstream output("Sim100_Test1.dat");
+  /*
+  std::ofstream output("Test5_AMR_100cells.dat", std::ios::app);
 
   const Real* dx  = geom.CellSize();
   // Position of the bottom left corner of the domain
@@ -119,39 +120,30 @@ AmrLevelAdv::writePlotFile (const std::string& dir,
   // AMReX has an XDim3 object, but a function needs to be written to
   // convert Real* to XDim3
   const Real dX = dx[0];
-  const Real dY = (amrex::SpaceDim > 1 ? dx[1] : 0.0);
-  const Real dZ = (amrex::SpaceDim > 2 ? dx[2] : 0.0);
 
   const Real probLoX = prob_lo[0];
-  const Real probLoY = (amrex::SpaceDim > 1 ? prob_lo[1] : 0.0);
-  const Real probLoZ = (amrex::SpaceDim > 2 ? prob_lo[2] : 0.0);
+  int i=1;
   
   // Loop over all the patches at this level
-  for (MFIter mfi(S_new, true); mfi.isValid(); ++mfi)
+  for (MFIter mfi(S_new); mfi.isValid(); ++mfi)
   {
+    std::cout<<i<<std::endl;
+    i+=1;
     Box bx = mfi.tilebox();
     const Dim3 lo = lbound(bx);
     const Dim3 hi = ubound(bx);
-
+    std::cout<<dX<<std::endl;
     const auto& arr = S_new.array(mfi);
-
-    for(int k = lo.z; k <= hi.z; k++)
-    {
-      const Real z = probLoZ + (double(k)+0.5) * dZ;
-      for(int j = lo.y; j <= hi.y; j++)
+    for(int i = lo.x; i <= hi.x; i++)
       {
-	const Real y = probLoY + (double(j)+0.5) * dY;
-	for(int i = lo.x; i <= hi.x; i++)
-	{
-	  const Real x = probLoX + (double(i)+0.5) * dX;
-	  std::cout<<i<<" "<<x<<" "<<dX<<std::endl;
-
-	  output<<x<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,4)<<" "<<arr(i,j,k,6)<<" "<<arr(i,j,k,7)<<std::endl;
-	  
-	}
+	std::cout<<i<<" ";
+	const Real x = probLoX + (double(i)+0.5) * dX;
+	output<<x<<" "<<arr(i,0,0,0)<<" "<<arr(i,0,0,4)<<" "<<arr(i,0,0,6)<<" "<<arr(i,0,0,7)<<std::endl;
       }
-    }
+    std::cout<<std::endl;
   }
+  output.close();
+  */
 }
 //
 //Define data descriptors.
@@ -190,7 +182,7 @@ AmrLevelAdv::variableSetUp ()
   int hi_bc[amrex::SpaceDim];
   // AMReX has pre-set BCs, including periodic (int_dir) and transmissive (foextrap)
   for (int i = 0; i < amrex::SpaceDim; ++i) {
-    lo_bc[i] = hi_bc[i] = BCType::foextrap;   // PW - Changed this to transmissive boundary conditions
+    lo_bc[i] = hi_bc[i] = BCType::foextrap;   // 2023U9 - Changed this to transmissive boundary conditions
   }
 
   // Object for storing all the boundary conditions
@@ -203,16 +195,16 @@ AmrLevelAdv::variableSetUp ()
   // bc: Boundary condition object for this variable (defined above)
   // BndryFunc: Function for setting boundary conditions.  For basic BCs, AMReX can handle these automatically
 
-  // PW COMMENTS
+  // 2023U9 COMMENTS
   // Add boundary conds for different dimensions here and for differnet variables rho, momentum and energy, pressure maybe?
-  desc_lst.setComponent(Phi_Type, 0, "rho", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to density
-  desc_lst.setComponent(Phi_Type, 1, "momx", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum x
-  desc_lst.setComponent(Phi_Type, 2, "E", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to total energy
-  desc_lst.setComponent(Phi_Type, 3, "momy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to momentum y
-  desc_lst.setComponent(Phi_Type, 4, "ux", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity x
-  desc_lst.setComponent(Phi_Type, 5, "uy", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to velocity y
-  desc_lst.setComponent(Phi_Type, 6, "p", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to pressure
-  desc_lst.setComponent(Phi_Type, 7, "e", bc, StateDescriptor::BndryFunc(nullfill)); // PW - Changed this to internal energy
+  desc_lst.setComponent(Phi_Type, 0, "rho", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to density
+  desc_lst.setComponent(Phi_Type, 1, "momx", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to momentum x
+  desc_lst.setComponent(Phi_Type, 2, "E", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to total energy
+  desc_lst.setComponent(Phi_Type, 3, "momy", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to momentum y
+  desc_lst.setComponent(Phi_Type, 4, "ux", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to velocity x
+  desc_lst.setComponent(Phi_Type, 5, "uy", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to velocity y
+  desc_lst.setComponent(Phi_Type, 6, "p", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to pressure
+  desc_lst.setComponent(Phi_Type, 7, "e", bc, StateDescriptor::BndryFunc(nullfill)); // 2023U9 - Changed this to internal energy
 }
 
 //
@@ -228,7 +220,7 @@ AmrLevelAdv::variableCleanUp ()
 //Initialize grid data at problem start-up.
 //
 
-// PW COMMENTS -> alter the initial data
+// 2023U9 COMMENTS -> alter the initial data
 void
 AmrLevelAdv::initData ()
 {
@@ -277,10 +269,9 @@ AmrLevelAdv::initData ()
 	{
 	  const Real x = probLoX + (double(i)+0.5) * dX;
 
-	  var_array prim_vals = Test.Test1D_1(x);
+	  var_array prim_vals = Test.Test1D_1(x);//, y);
 	  var_array con_vals = euler_EOS.prim_to_con(prim_vals, DIM);
-	  int side=1; // 0 == x aligned, 1==y aligned
-
+	  
 	  arr(i, j, k, 0) = con_vals[0]; // density
 	  arr(i, j, k, 1) = con_vals[1]; // momentum x
 	  arr(i, j, k, 2) = con_vals[2]; // energy
@@ -465,7 +456,7 @@ AmrLevelAdv::advance (Real time,
   // Advection velocity - AMReX allows the defintion of a vector
   // object (similar functionality to C++ std::array<N>, since its size must
   // be known, but was implemented before array was added to C++)
-  // const Vector<Real> vel{1.0,1.0,0.0}; // PW_COMMENTS -> should be commenting this out and adding something to calculate wave speed on each it?
+  // const Vector<Real> vel{1.0,1.0,0.0}; // 2023U9_COMMENTS -> should be commenting this out and adding something to calculate wave speed on each it?
 
   // State with ghost cells - this is used to compute fluxes and perform the update.
   MultiFab Sborder(grids, dmap, NUM_STATE, NUM_GROW);
@@ -476,10 +467,10 @@ AmrLevelAdv::advance (Real time,
   // domains effectively being overlapping).  It also takes care of
   // AMR patch and CPU boundaries.
   
-  Sborder.FillBoundary(geom.periodicity());
+  //Sborder.FillBoundary(geom.periodicity());
   TransmissiveBoundaryConds(Sborder);
 
-  // PW_COMMENTS
+  // 2023U9_COMMENTS
   // change this loop to implement HLLC solver
 
   for (int d = 0; d < amrex::SpaceDim ; d++)   
@@ -512,15 +503,15 @@ AmrLevelAdv::advance (Real time,
 		  {
 		    for(int i = lo.x; i <= hi.x+iOffset; i++)
 		      {
-			// PW Changes - getting values for HLLC
+			// 2023U9 Changes - getting values for HLLC
 			var_array u_i = Array4_to_stdArray(arr, i-1, j, k, states_for_update);
 			var_array u_iMinus1 = Array4_to_stdArray(arr, i-2, j, k, states_for_update);
 			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, states_for_update);
 			var_array u_iPlus2 = Array4_to_stdArray(arr, i+1, j, k, states_for_update);
 
-			// PW Changes - HLLC flux calculation
+			// 2023U9 Changes - HLLC flux calculation
 			var_array HLLC_flux = HLLC.HLLC_flux(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
-			// PW Changes - Adding flux calculation into flux array
+			// 2023U9 Changes - Adding flux calculation into flux array
 			for (int z=0; z<states_for_update; z++)
 			  {
 			    fluxArr(i,j,k,z) = HLLC_flux[z];
@@ -536,15 +527,15 @@ AmrLevelAdv::advance (Real time,
 		  {
 		    for(int i = lo.x; i <= hi.x; i++)
 		      {
-			// PW Changes - Adding loop to go through variables in arr
+			// 2023U9 Changes - Adding loop to go through variables in arr
 			for (int z=0; z<states_for_update; z++)
 			  {
 			    // Conservative update formula
-			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
+			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j, k, z) - fluxArr(i,j,k,z));
 			  }
 			var_array con_vals = Array4_to_stdArray(arr, i, j, k, states_for_update);
 			var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
-			//std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
+
 			arr(i,j,k,4) = prim_vals[1];
 			arr(i,j,k,5) = prim_vals[3];
 			arr(i,j,k,6) = prim_vals[2];
@@ -555,7 +546,7 @@ AmrLevelAdv::advance (Real time,
 	  }
 
 	// We need to compute boundary conditions again after each update
-	Sborder.FillBoundary(geom.periodicity());
+	//Sborder.FillBoundary(geom.periodicity());
 	TransmissiveBoundaryConds(Sborder);
     
 	// The fluxes now need scaling for the reflux command.
@@ -580,7 +571,7 @@ AmrLevelAdv::advance (Real time,
 	  }
       }
     
-    // PW Changes - Adding loop for Y dimension
+    // 2023U9 Changes - Adding loop for Y dimension
     else if (d == 1)
       {
 
@@ -603,27 +594,22 @@ AmrLevelAdv::advance (Real time,
 	      {
 		for(int j = lo.y; j <= hi.y+jOffset; j++)
 		  {
-		    double x=0;
 		    for(int i = lo.x; i <= hi.x+iOffset; i++)
 		      {
-			// PW Changes - getting values for HLLC
+			// 2023U9 Changes - getting values for HLLC
 			var_array u_i = Array4_to_stdArray(arr, i, j-1, k, states_for_update);
 			var_array u_iMinus1 = Array4_to_stdArray(arr, i, j-2, k, states_for_update);
 			var_array u_iPlus1 = Array4_to_stdArray(arr, i, j, k, states_for_update);
 			var_array u_iPlus2 = Array4_to_stdArray(arr, i, j+1, k, states_for_update);
-			x += dx[d];
-			
-			//std::cout<<x<<" "<<"uPlus1: "<<u_iPlus1[0]<<" "<<u_iPlus1[1]<<" "<<u_iPlus1[2]<<" "<<u_iPlus1[3]<<std::endl;
 	    
-			// PW Changes - Y HLLC flux calculation
+			// 2023U9 Changes - Y HLLC flux calculation
 			var_array HLLC_flux = HLLC.HLLC_flux_Y(u_i, u_iMinus1, u_iPlus1, u_iPlus2, dx[d], dt, DIM);
-			//std::cout<<"HLLC Flux Y: "<<HLLC_flux[0]<<" "<<HLLC_flux[1]<<" "<<HLLC_flux[2]<<" "<<HLLC_flux[3]<<std::endl;
-			// PW Changes - Adding flux calculation into flux array
+
+			// 2023U9 Changes - Adding flux calculation into flux array
 			for (int z=0; z<states_for_update; z++)
 			  {
 			    fluxArr(i,j,k,z) = HLLC_flux[z];
 			  }
-			//std::cout<<"HLLC Flux Y: "<<fluxArr(i,j,k,0)<<" "<<fluxArr(i,j,k,1)<<" "<<fluxArr(i,j,k,2)<<" "<<fluxArr(i,j,k,3)<<std::endl;
 		      }
 		  }
 	      }
@@ -634,50 +620,48 @@ AmrLevelAdv::advance (Real time,
 		  {
 		    for(int i = lo.x; i <= hi.x; i++)
 		      {
-			// PW Changes - Adding loop to go through variables in arr
+			// 2023U9 Changes - Adding loop to go through variables in arr
 			for (int z=0; z<states_for_update; z++)
 			  {
 			    // Conservative update formula
-			    // PW Comments -> just need to alter this to add extra variable in 2D
-			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i+iOffset, j+jOffset, k+kOffset,z) - fluxArr(i,j,k,z));
+			    // 2023U9 Comments -> just need to alter this to add extra variable in 2D
+			    arr(i,j,k,z) = arr(i,j,k,z) - (dt / dx[d]) * (fluxArr(i, j+jOffset, k,z) - fluxArr(i,j,k,z));
 			  }
 			var_array con_vals = Array4_to_stdArray(arr, i, j, k, states_for_update);
 			var_array prim_vals = euler_EOS.con_to_prim(con_vals, DIM);
-			//std::cout<<"Size: "<<con_vals[0]<<" "<<con_vals[1]<<" "<<con_vals[2]<<" "<<con_vals[3]<<std::endl;
-			//std::cout<<"momentum: "<<arr(i,j,k,1)<<" "<<arr(i,j,k,0)<<" "<<arr(i,j,k,1)/arr(i,j,k,0)<<std::endl;
+
 			arr(i,j,k,4) = prim_vals[1];
 			arr(i,j,k,5) = prim_vals[3];
-			//std::cout<<"Vy: "<<arr(i,j,k,4)<<" "<<fluxArr(i,j,k,4)<<" "<<fluxArr(i+iOffset, j+jOffset, k+kOffset,4)<<std::endl;
 			arr(i,j,k,6) = prim_vals[2];
 			arr(i,j,k,7) = prim_vals[2] / ((gam-1.0)*con_vals[0]);
 		      }
 		  }
 	      }
 	  }
-      }
-    // We need to compute boundary conditions again after each update
-    Sborder.FillBoundary(geom.periodicity());
-    TransmissiveBoundaryConds(Sborder);
+	// We need to compute boundary conditions again after each update
+	//Sborder.FillBoundary(geom.periodicity());
+	TransmissiveBoundaryConds(Sborder);
     
-    // The fluxes now need scaling for the reflux command.
-    // This scaling is by the size of the boundary through which the flux passes, e.g. the x-flux needs scaling by the dy, dz and dt
-    if(do_reflux)
-      {
-	Real scaleFactor = dt;
-	for(int scaledir = 0; scaledir < amrex::SpaceDim; ++scaledir)
+	// The fluxes now need scaling for the reflux command.
+	// This scaling is by the size of the boundary through which the flux passes, e.g. the x-flux needs scaling by the dy, dz and dt
+	if(do_reflux)
 	  {
-	    // Fluxes don't need scaling by dx[d]
-	    if(scaledir == d)
+	    Real scaleFactor = dt;
+	    for(int scaledir = 0; scaledir < amrex::SpaceDim; ++scaledir)
 	      {
-		continue;
+		// Fluxes don't need scaling by dx[d]
+		if(scaledir == d)
+		  {
+		    continue;
+		  }
+		scaleFactor *= dx[scaledir];
 	      }
-	    scaleFactor *= dx[scaledir];
+	    // The mult function automatically multiplies entries in a multifab by a scalar
+	    // scaleFactor: The scalar to multiply by
+	    // 0: The first data index in the multifab to multiply
+	    // NUM_STATE:  The total number of data indices that will be multiplied
+	    fluxes[d].mult(scaleFactor, 0, NUM_STATE);
 	  }
-	// The mult function automatically multiplies entries in a multifab by a scalar
-	// scaleFactor: The scalar to multiply by
-	// 0: The first data index in the multifab to multiply
-	// NUM_STATE:  The total number of data indices that will be multiplied
-	fluxes[d].mult(scaleFactor, 0, NUM_STATE);
       }
   }
   // The updated data is now copied to the S_new multifab.  This means
@@ -723,7 +707,7 @@ AmrLevelAdv::advance (Real time,
   return dt;
 }
 
-// PW Changes - Adding function to get values in std::array format from amrex::Array4 format
+// 2023U9 Changes - Adding function to get values in std::array format from amrex::Array4 format
 var_array AmrLevelAdv::Array4_to_stdArray(amrex::Array4<amrex::Real> const& arr, int i, int j, int k, int num_var)
 {
   var_array vals;
@@ -738,7 +722,7 @@ var_array AmrLevelAdv::Array4_to_stdArray(amrex::Array4<amrex::Real> const& arr,
 
 void AmrLevelAdv::TransmissiveBoundaryConds(amrex::MultiFab& phi)
 {
-  // PW Changes - Added to implement transmissive boundaries
+  // 2023U9 Changes - Added to implement transmissive boundaries
   Vector<BCRec> boundaries(NUM_STATE);
 
   for (int v=0; v<NUM_STATE; v++)
@@ -759,7 +743,7 @@ void AmrLevelAdv::TransmissiveBoundaryConds(amrex::MultiFab& phi)
 // need modifying
 //
 
-// PW COMMENTS -> modify this with timestep calculation
+// 2023U9 COMMENTS -> modify this with timestep calculation
 Real
 AmrLevelAdv::estTimeStep (Real)
 {
@@ -771,12 +755,12 @@ AmrLevelAdv::estTimeStep (Real)
   const Real cur_time = state[Phi_Type].curTime();
   const MultiFab& S_new = get_new_data(Phi_Type);
 
-  // PW COMMENTS
+  // 2023U9 COMMENTS
   // add here functionality to loop through Euler equation data and find amax and loop through all patches at the current level
 
-  double velMag = 0.0; // PW Changes - changed to double
+  double velMag = 0.0; // 2023U9 Changes - changed to double
 
-  // PW Changes - Looping over all patches to overall timestep
+  // 2023U9 Changes - Looping over all patches to overall timestep
   for (MFIter mfi(S_new, true); mfi.isValid(); ++mfi)
   {
     const Box& bx = mfi.tilebox();
@@ -798,15 +782,19 @@ AmrLevelAdv::estTimeStep (Real)
 	for(int i = lo.x; i <= hi.x; i++)
 	{
 	  var_array u_con;
-	  for (int z=0; z<NUM_STATE; z++)
+	  for (int z=0; z<states_for_update; z++)
 	    {
 	      u_con[z] = arr(i,j,k,z);
+	      //std::cout<<u_con[z]<<" ";
 	    }
-	  var_array u_prim = euler_EOS.prim_to_con(u_con, DIM);
+	  //std::cout<<std::endl;
+
+	  var_array u_prim = euler_EOS.con_to_prim(u_con, DIM);
 
 	  double cs = sqrt((gam*u_prim[2])/u_prim[0]);
-	  double wavespeed = fabs(u_prim[1]) + cs;
-
+	  //std::cout<<"Sound Speed: "<<cs<<" "<<u_prim[2]<<" "<<u_prim[0]<<std::endl;
+	  double wavespeed = sqrt(pow(u_prim[1],2.0)+pow(u_prim[3],2.0)) + cs;
+	  
 	  if (wavespeed > velMag)
 	    {
 	      velMag = wavespeed;
@@ -820,7 +808,6 @@ AmrLevelAdv::estTimeStep (Real)
   {
     dt_est = std::min(dt_est, dx[d]/velMag);
   }
-  
   // Ensure that we really do have the minimum across all processors
   ParallelDescriptor::ReduceRealMin(dt_est);
   dt_est *= cfl;
@@ -829,7 +816,7 @@ AmrLevelAdv::estTimeStep (Real)
     amrex::Print() << "AmrLevelAdv::estTimeStep at level " << level 
 		   << ":  dt_est = " << dt_est << std::endl;
   }
-  
+  std::cout<<"TIMESTEP: "<<velMag<<" "<<dt_est<<std::endl;
   return dt_est;
 }
 
@@ -1130,7 +1117,7 @@ AmrLevelAdv::read_params ()
   }
   */
 
-  // PW COMMENTS -> want to change this / get rid of it so that I can implement transmissive boundaries
+  // 2023U9 COMMENTS -> want to change this / get rid of it so that I can implement transmissive boundaries
 
   // This tutorial code only supports periodic boundaries.
   // The periodicity is read from the settings file in AMReX source code, but can be accessed here
