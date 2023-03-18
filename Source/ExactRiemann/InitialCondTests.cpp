@@ -2,7 +2,7 @@
 
 var_array InitialCondTests::Test1D_1(double x)
 {
-
+  // Toro test 1
   var_array initial_conds;
   
   if (x < 0.5)
@@ -29,7 +29,7 @@ var_array InitialCondTests::Test1D_1(double x)
 
 var_array InitialCondTests::Test1D_2(double x)
 {
-
+  // Toro test 2
   var_array initial_conds;
   
   if (x < 0.5)
@@ -56,7 +56,7 @@ var_array InitialCondTests::Test1D_2(double x)
 
 var_array InitialCondTests::Test1D_3(double x)
 {
-
+  // Toro test 3
   var_array initial_conds;
   
   if (x < 0.5)
@@ -83,7 +83,7 @@ var_array InitialCondTests::Test1D_3(double x)
 
 var_array InitialCondTests::Test1D_4(double x)
 {
-
+  // Toro test 4
   var_array initial_conds;
   
   if (x < 0.5)
@@ -110,7 +110,7 @@ var_array InitialCondTests::Test1D_4(double x)
 
 var_array InitialCondTests::Test1D_5(double x)
 {
-
+  // Toro test 5
   var_array initial_conds;
   
   if (x < 0.5)
