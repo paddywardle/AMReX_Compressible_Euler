@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def ReadFile(filename):
-     
+
+    # read in data
     data = []
     with open(filename) as f:
         for line in f.readlines():
@@ -14,14 +15,16 @@ def ReadFile(filename):
 
 def Plot1D(TestNum, col):
 
+    # read data
     ExactFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_400cells.dat"
     NoAMRFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_NoAMR"
-
+    
     ExactData = ReadFile(ExactFilename)
     NoAMR100 = ReadFile(NoAMRFilename + "_100cells.dat")
     NoAMR200 = ReadFile(NoAMRFilename + "_200cells.dat")
     NoAMR400 = ReadFile(NoAMRFilename + "_400cells.dat")
 
+    # create plots
     fig, ax = plt.subplots(figsize=(13,8))
     
     ax.scatter(NoAMR100[:,0], NoAMR100[:,col], c="b", marker="x", label="100 cells")
@@ -59,6 +62,7 @@ def Plot1D(TestNum, col):
 
 def Subplot1D(TestNum):
 
+    # read data
     ExactFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_400cells.dat"
     NoAMRFilename = f"../RiemannExactResults/{TestNum}/{TestNum}_NoAMR"
 
@@ -67,6 +71,7 @@ def Subplot1D(TestNum):
     NoAMR200 = ReadFile(NoAMRFilename + "_200cells.dat")
     NoAMR400 = ReadFile(NoAMRFilename + "_400cells.dat")
 
+    # create subplots for density, velocity, pressure and specific internal energy
     fig, ax = plt.subplots(2, 2, figsize=(13,11))
     
     ax[0,0].scatter(NoAMR100[:,0], NoAMR100[:,1], c="b", marker="x", label="100 cells")
