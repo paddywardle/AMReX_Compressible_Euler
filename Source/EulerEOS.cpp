@@ -13,11 +13,11 @@ var_array EulerEOS::prim_to_con(var_array u_p, int dim)
 
   if (dim == 2)
     {
-      u_c[2] = u_p[2] / (gamma - 1.0) + 0.5 * u_p[0] * (pow(u_p[1], 2) + pow(u_p[3], 2));
+      u_c[2] = u_p[2] / (gamma - 1.0) + 0.5 * u_p[0] * (pow(u_p[1], 2.0) + pow(u_p[3], 2.0));
     }
   else if (dim == 1)
     {
-      u_c[2] = u_p[2] / (gamma - 1.0) + 0.5 * u_p[0] * pow(u_p[1], 2);
+      u_c[2] = u_p[2] / (gamma - 1.0) + 0.5 * u_p[0] * pow(u_p[1], 2.0);
     }
 
   return u_c;
@@ -76,7 +76,7 @@ var_array EulerEOS::Euler_flux_fn_Y(var_array f, var_array f_prim)
   flux_fn[1] = rho * vx * vy;
   flux_fn[2] = flux_fn_E(energy, vy, pressure);
   flux_fn[3] = flux_fn_mom(rho, vy, pressure);
-  //std::cout<<"Flux fn: "<<flux_fn[0]<<" "<<flux_fn[1]<<" "<<flux_fn[2]<<" "<<flux_fn[3]<<" "<<std::endl;
+  
   return flux_fn;
 
 }
