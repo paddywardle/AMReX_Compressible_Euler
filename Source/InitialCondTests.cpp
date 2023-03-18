@@ -351,7 +351,7 @@ var_array InitialCondTests::Test2_diag(double x, double y)
       // Density
       initial_conds[0] = 1.0;
       // Velocity
-      initial_conds[1] = 0.0;
+      initial_conds[1] = -2.0;
       // Pressure
       initial_conds[2] = 0.4;
       // Velocity y
@@ -362,7 +362,7 @@ var_array InitialCondTests::Test2_diag(double x, double y)
       // Density
       initial_conds[0] = 1.0;
       // Velocity
-      initial_conds[1] = 0.0;
+      initial_conds[1] = 2.0;
       // Pressure
       initial_conds[2] = 0.4;
       // Velocity y
@@ -371,6 +371,7 @@ var_array InitialCondTests::Test2_diag(double x, double y)
 
   return initial_conds;
 }
+
 
 var_array InitialCondTests::Test3_diag(double x, double y)
 {
@@ -386,7 +387,7 @@ var_array InitialCondTests::Test3_diag(double x, double y)
       // Pressure
       initial_conds[2] = 1000.0;
       // Velocity y
-      initial_conds[3] = 0;
+      initial_conds[3] = 0.0;
     }
   else
     {
@@ -397,7 +398,7 @@ var_array InitialCondTests::Test3_diag(double x, double y)
       // Pressure
       initial_conds[2] = 0.01;
       // Velocity y
-      initial_conds[3] = 0;
+      initial_conds[3] = 0.0;
     }
 
   return initial_conds;
@@ -417,7 +418,7 @@ var_array InitialCondTests::Test4_diag(double x, double y)
       // Pressure
       initial_conds[2] = 0.01;
       // Velocity y
-      initial_conds[3] = 0;
+      initial_conds[3] = 0.0;
     }
   else
     {
@@ -428,7 +429,7 @@ var_array InitialCondTests::Test4_diag(double x, double y)
       // Pressure
       initial_conds[2] = 100.0;
       // Velocity y
-      initial_conds[3] = 0;
+      initial_conds[3] = 0.0;
     }
 
   return initial_conds;
@@ -444,7 +445,7 @@ var_array InitialCondTests::Test5_diag(double x, double y)
       // Density
       initial_conds[0] = 5.99924;
       // Velocity
-      initial_conds[1] = 0;
+      initial_conds[1] = 19.5975;
       // Pressure
       initial_conds[2] = 460.894;
       // Velocity y
@@ -455,7 +456,7 @@ var_array InitialCondTests::Test5_diag(double x, double y)
       // Density
       initial_conds[0] = 5.99242;
       // Velocity
-      initial_conds[1] = 0;
+      initial_conds[1] = -6.19633;
       // Pressure
       initial_conds[2] = 46.0950;
       // Velocity y
