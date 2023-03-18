@@ -10,7 +10,7 @@ void EulerSystem::initial_conds()
     {
       double x = x0 + (double(i) + 0.5) * dx;
 
-      var_array current = Tests.Test1D_5(x);
+      var_array current = Tests.Test1D_3(x);
 
       u_prim(i,0) = current[0];
       u_prim(i,1) = current[1];
