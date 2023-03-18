@@ -5,6 +5,7 @@ EulerSystem::EulerSystem()
 
 void EulerSystem::initial_conds()
 {
+  // Set initial conditions for simulation
   InitialCondTests Tests;
   for (int i=0; i<u.rows(); i++)
     {
@@ -20,6 +21,7 @@ void EulerSystem::initial_conds()
 
 void EulerSystem::resize_matrix()
 {
+  // resize matrices to have ghost cells
   u.resize(nCells+4, 4);
   uPlus1.resize(nCells+4, 3);
   u_prim.resize(nCells+4, 3);
@@ -27,6 +29,7 @@ void EulerSystem::resize_matrix()
 
 void EulerSystem::outputFile(std::string outputName)
 {
+  // output simulation results
   std::ofstream output(outputName);
 
   for (int i=1; i<u.rows()-3; i++)
@@ -50,10 +53,15 @@ void EulerSystem::Solver1D()
   // Instance of helper classes
   NumericalMethod NumM(gamma, nCells);
 
+  // Calculate sound speed
   Eigen::ArrayXXf uL_prim = u_prim.row(0);
   Eigen::ArrayXXf uR_prim = u_prim.row(nCells+1);
   Eigen::ArrayXXf cs = NumM.SoundSpeed(uL_prim, uR_prim);
+
+  // approximate pressure guess
   double pressure = NumM.PressureApprox(uL_prim, uR_prim);
+
+  // calculate intermediate pressure in star states using Newton-Raphson method
   std::array<double,2> star_vals = NumM.NewtonRaphson(pressure, uL_prim, uR_prim, cs);
   double p_star = star_vals[0];
   double v_star = star_vals[1];
@@ -61,8 +69,7 @@ void EulerSystem::Solver1D()
 
   Eigen::ArrayXXf u_current;
 
-  std::cout<<p_star<<" "<<v_star<<" "<<cs(0)<<" "<<cs(1)<<" "<<pressure<<std::endl;
-
+  // loop through cells and sample the value in each point based on wave patterns
   for (int i=0; i<nCells+2; i++)
     {
       x_val += dx;
@@ -77,7 +84,8 @@ void EulerSystem::Solver1D()
 
 void EulerSystem::run()
 {
-  
+
+  // call simulation functions
   resize_matrix();
     
   initial_conds();
