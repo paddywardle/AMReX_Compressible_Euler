@@ -33,7 +33,6 @@ main (int   argc,
         pp.query("max_step",max_step);
         pp.query("strt_time",strt_time);
         pp.query("stop_time",stop_time);
-	std::cout<<max_step<<" "<<strt_time<<" "<<stop_time<<std::endl;
     }
 
     if (strt_time < 0.0) {
